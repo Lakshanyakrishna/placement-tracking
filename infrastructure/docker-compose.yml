@@ -1,0 +1,101 @@
+version: "3.9"
+
+name: placement-tracker
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/app/Dockerfile
+      target: development
+    container_name: pt-app
+    ports:
+      - "${APP_PORT:-3000}:3000"
+      - "9229:9229"
+    env_file:
+      - ../.env
+    volumes:
+      - ../src:/app/src
+      - ../package.json:/app/package.json
+      - ../tsconfig.json:/app/tsconfig.json
+      - ../tsconfig.build.json:/app/tsconfig.build.json
+      - ../nest-cli.json:/app/nest-cli.json
+      - ../.eslintrc.js:/app/.eslintrc.js
+      - ../.prettierrc:/app/.prettierrc
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - placement-tracker-net
+
+  db:
+    image: postgres:16-alpine
+    container_name: pt-db
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-placement_tracker}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_password_only}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-placement_tracker}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - placement-tracker-net
+
+  minio:
+    image: minio/minio:latest
+    container_name: pt-minio
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - placement-tracker-net
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: pt-mailhog
+    ports:
+      - "${MAILHOG_SMTP_PORT:-1025}:1025"
+      - "${MAILHOG_UI_PORT:-8025}:8025"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "1025"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - placement-tracker-net
+
+volumes:
+  pgdata:
+    driver: local
+  minio-data:
+    driver: local
+
+networks:
+  placement-tracker-net:
+    driver: bridge

@@ -1,0 +1,136 @@
+import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { AppShell } from '@/components/layout/AppShell'
+import { RoleGuard } from '@/components/layout/RoleGuard'
+import { ROLES, ROUTES } from '@/lib/constants'
+
+import LoginPage from '@/pages/LoginPage'
+import AdminDashboardPage from '@/pages/admin/DashboardPage'
+import MentorDashboardPage from '@/pages/mentor/DashboardPage'
+import TeamLeaderDashboardPage from '@/pages/team-leader/DashboardPage'
+import StudentDashboardPage from '@/pages/student/DashboardPage'
+import OpportunityListPage from '@/pages/opportunities/ListPage'
+import OpportunityCreatePage from '@/pages/opportunities/CreatePage'
+import OpportunityEditPage from '@/pages/opportunities/EditPage'
+import StudentsListPage from '@/pages/admin/students/ListPage'
+import VerificationsListPage from '@/pages/admin/verifications/ListPage'
+import ReportsListPage from '@/pages/admin/reports/ListPage'
+import NotFoundPage from '@/pages/NotFoundPage'
+
+export const router = createBrowserRouter([
+  {
+    path: ROUTES.LOGIN,
+    element: <LoginPage />,
+  },
+  {
+    path: '/',
+    element: <AppShell />,
+    children: [
+      { index: true, element: <Navigate to={ROUTES.ADMIN_DASHBOARD} replace /> },
+      {
+        path: 'admin/dashboard',
+        element: (
+          <RoleGuard allowedRoles={[ROLES.ADMIN]}>
+            <AdminDashboardPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: 'admin/students',
+        element: (
+          <RoleGuard allowedRoles={[ROLES.ADMIN]}>
+            <StudentsListPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: 'admin/opportunities',
+        element: (
+          <RoleGuard allowedRoles={[ROLES.ADMIN]}>
+            <OpportunityListPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: 'admin/opportunities/new',
+        element: (
+          <RoleGuard allowedRoles={[ROLES.ADMIN]}>
+            <OpportunityCreatePage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: 'admin/opportunities/:id/edit',
+        element: (
+          <RoleGuard allowedRoles={[ROLES.ADMIN]}>
+            <OpportunityEditPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: 'admin/verifications',
+        element: (
+          <RoleGuard allowedRoles={[ROLES.ADMIN]}>
+            <VerificationsListPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: 'admin/reports',
+        element: (
+          <RoleGuard allowedRoles={[ROLES.ADMIN]}>
+            <ReportsListPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: 'mentor/dashboard',
+        element: (
+          <RoleGuard allowedRoles={[ROLES.MENTOR]}>
+            <MentorDashboardPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: 'team-leader/dashboard',
+        element: (
+          <RoleGuard allowedRoles={[ROLES.TEAM_LEADER]}>
+            <TeamLeaderDashboardPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: 'student/dashboard',
+        element: (
+          <RoleGuard allowedRoles={['student']}>
+            <StudentDashboardPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: 'student/certifications',
+        element: (
+          <RoleGuard allowedRoles={['student']}>
+            <StudentDashboardPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: 'student/submissions',
+        element: (
+          <RoleGuard allowedRoles={['student']}>
+            <StudentDashboardPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: 'student/profile',
+        element: (
+          <RoleGuard allowedRoles={['student']}>
+            <StudentDashboardPage />
+          </RoleGuard>
+        ),
+      },
+      { path: '*', element: <NotFoundPage /> },
+    ],
+  },
+])
