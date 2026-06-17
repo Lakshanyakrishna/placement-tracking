@@ -19,25 +19,35 @@ interface ProfileInfo {
 
 export default function ProfilePage() {
   const { user } = useAuth()
+  const enrollment = (user as any)?.enrollment
 
   const { data: profile, isLoading, error, refetch } = useQuery<ProfileInfo>({
     queryKey: ['student-profile', user?.id],
     queryFn: async () => {
-      const enrollment = (user as any)?.enrollment
       const rollNumber = enrollment?.rollNumber ?? ''
-
       let sectionName = ''
+      let mentor = ''
       let groupName = ''
+      let teamLeader = ''
 
-      if (enrollment?.sectionId || enrollment?.groupId) {
-        const [sections, groups] = await Promise.all([
-          sectionsApi.listSections(),
-          groupsApi.listGroups(),
-        ])
-        const section = sections?.find((s: any) => s.id === enrollment?.sectionId)
-        const group = groups?.find((g: any) => g.id === enrollment?.groupId)
-        sectionName = section?.name ?? section?.code ?? ''
-        groupName = group?.name ?? ''
+      if (enrollment?.sectionId) {
+        try {
+          const section = await sectionsApi.getSection(enrollment.sectionId)
+          sectionName = section.name ?? section.code ?? ''
+          mentor = section.mentorName ?? ''
+        } catch {
+          sectionName = '—'
+        }
+      }
+
+      if (enrollment?.groupId) {
+        try {
+          const group = await groupsApi.getGroup(enrollment.groupId)
+          groupName = group.name ?? ''
+          teamLeader = group.teamLeaderName ?? ''
+        } catch {
+          groupName = '—'
+        }
       }
 
       return {
@@ -46,8 +56,8 @@ export default function ProfilePage() {
         rollNumber: rollNumber || '',
         section: sectionName,
         group: groupName,
-        mentor: '',
-        teamLeader: '',
+        mentor,
+        teamLeader,
       }
     },
     enabled: !!user,

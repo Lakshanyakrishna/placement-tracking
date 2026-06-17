@@ -22,6 +22,11 @@ export async function listGroups(): Promise<GroupDetailDto[]> {
   return response.data.data
 }
 
+export async function getGroup(id: string): Promise<GroupDetailDto> {
+  const response = await client.get<GroupDetailDto>(`/groups/${id}`)
+  return response.data
+}
+
 export async function getGroupStudents(groupId: string): Promise<GroupStudentDto[]> {
   const response = await client.get<GroupStudentDto[]>(`/groups/${groupId}/students`)
   return response.data

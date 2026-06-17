@@ -30,6 +30,11 @@ export async function listSections(): Promise<SectionDto[]> {
   return response.data
 }
 
+export async function getSection(id: string): Promise<SectionDto> {
+  const response = await client.get<SectionDto>(`/sections/${id}`)
+  return response.data
+}
+
 export async function getSectionGroups(sectionId: string): Promise<GroupDto[]> {
   const response = await client.get<GroupDto[]>(`/sections/${sectionId}/groups`)
   return response.data
