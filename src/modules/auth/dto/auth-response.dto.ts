@@ -23,6 +23,9 @@ export class UserInfo {
     scopeId: string | null;
   }>;
 
+  @ApiProperty({ example: false })
+  mustChangePassword: boolean;
+
   @ApiProperty({
     example: {
       id: 'uuid',
@@ -31,6 +34,7 @@ export class UserInfo {
       sectionId: 'uuid',
       groupId: 'uuid',
       batchId: 'uuid',
+      rollNumber: '23BH1A7243',
     },
     description: 'Active enrollment (null for non-students)',
     nullable: true,
@@ -42,6 +46,7 @@ export class UserInfo {
     sectionId: string;
     groupId?: string;
     batchId: string;
+    rollNumber?: string;
   } | null;
 }
 

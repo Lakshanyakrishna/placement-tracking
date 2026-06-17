@@ -2,10 +2,12 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { GraduationCap, ArrowLeft } from 'lucide-react'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -20,6 +22,7 @@ interface LoginFormProps {
 
 export function LoginForm({ onSubmit }: LoginFormProps) {
   const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate()
   const {
     register,
     handleSubmit,
@@ -39,17 +42,31 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <Card className="w-full max-w-sm">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-stmarys to-stmarys-dark px-4">
+      <div className="absolute left-4 top-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-white/80 hover:text-white"
+          onClick={() => navigate('/')}
+        >
+          <ArrowLeft className="mr-1 h-4 w-4" />
+          Back
+        </Button>
+      </div>
+      <Card className="w-full max-w-sm shadow-xl">
         <CardHeader className="text-center">
-          <CardTitle>Sign In</CardTitle>
-          <CardDescription>Placement Opportunity Tracker</CardDescription>
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-stmarys-light">
+            <GraduationCap className="h-6 w-6 text-stmarys" />
+          </div>
+          <CardTitle className="text-lg">Sign In</CardTitle>
+          <CardDescription>St. Mary's Career Hub</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="you@example.com" {...register('email')} />
+              <Input id="email" type="email" placeholder="you@stmarys.edu" {...register('email')} />
               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
             <div className="space-y-2">

@@ -14,6 +14,7 @@ interface RawEnrollment {
   sectionId: string
   groupId?: string
   batchId: string
+  rollNumber?: string
 }
 
 interface RawUser {
@@ -21,6 +22,7 @@ interface RawUser {
   email: string
   name: string
   isActive: boolean
+  mustChangePassword: boolean
   roles: RawRole[]
   enrollment: RawEnrollment | null
 }
@@ -32,6 +34,8 @@ function toUser(raw: RawUser): User {
     name: raw.name,
     roles: raw.roles.map((r) => r.role),
     isStudent: raw.enrollment !== null,
+    mustChangePassword: raw.mustChangePassword,
+    enrollment: raw.enrollment ?? undefined,
   }
 }
 
@@ -54,6 +58,10 @@ export async function refresh(): Promise<{ accessToken: string }> {
   const response = await client.post<{ accessToken: string }>('/auth/refresh')
   setAccessToken(response.data.accessToken)
   return response.data
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await client.post('/auth/change-password', { currentPassword, newPassword })
 }
 
 export async function forgotPassword(email: string): Promise<void> {

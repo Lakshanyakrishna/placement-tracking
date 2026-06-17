@@ -3,6 +3,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { RoleGuard } from '@/components/layout/RoleGuard'
 import { ROLES, ROUTES } from '@/lib/constants'
 
+import LandingPage from '@/pages/LandingPage'
 import LoginPage from '@/pages/LoginPage'
 import AdminDashboardPage from '@/pages/admin/DashboardPage'
 import MentorDashboardPage from '@/pages/mentor/DashboardPage'
@@ -21,14 +22,16 @@ import NotFoundPage from '@/pages/NotFoundPage'
 
 export const router = createBrowserRouter([
   {
-    path: ROUTES.LOGIN,
+    index: true,
+    element: <LandingPage />,
+  },
+  {
+    path: 'login',
     element: <LoginPage />,
   },
   {
-    path: '/',
     element: <AppShell />,
     children: [
-      { index: true, element: <Navigate to={ROUTES.ADMIN_DASHBOARD} replace /> },
       {
         path: 'admin/dashboard',
         element: (
@@ -133,7 +136,7 @@ export const router = createBrowserRouter([
           </RoleGuard>
         ),
       },
-      { path: '*', element: <NotFoundPage /> },
     ],
   },
+  { path: '*', element: <NotFoundPage /> },
 ])

@@ -36,6 +36,7 @@ interface LoginResult {
     email: string;
     name: string;
     isActive: boolean;
+    mustChangePassword: boolean;
     roles: Array<{ role: string; scopeType: string; scopeId: string | null }>;
     enrollment: TokenPayload['enrollment'] | null;
   };
@@ -100,6 +101,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         isActive: user.isActive,
+        mustChangePassword: user.mustChangePassword,
         roles: tokenPayload.roles,
         enrollment: tokenPayload.enrollment ?? null,
       },
@@ -215,6 +217,23 @@ export class AuthService {
       { userId: storedToken.userId, revokedAt: IsNull() },
       { revokedAt: new Date() },
     );
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    const rounds = this.config.auth.bcryptRounds ?? 10;
+    const newHash = await bcrypt.hash(newPassword, rounds);
+    await this.usersService.updatePasswordHash(userId, newHash);
+    await this.usersService.clearMustChangePassword(userId);
   }
 
   private async findActiveEnrollment(userId: string): Promise<{

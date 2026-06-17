@@ -7,14 +7,18 @@ import {
   Req,
   Res,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiCookieAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiCookieAuth, ApiBearerAuth } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuthResponseDto, TokenRefreshResponseDto } from './dto/auth-response.dto';
 
 const REFRESH_TOKEN_COOKIE = 'refresh_token';
@@ -53,7 +57,7 @@ export class AuthController {
     return {
       accessToken: result.accessToken,
       user: result.user,
-    };
+    } as AuthResponseDto;
   }
 
   @Public()
@@ -135,6 +139,22 @@ export class AuthController {
   async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ message: string }> {
     await this.authService.resetPassword(dto.token, dto.password);
     return { message: 'Password has been reset successfully.' };
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Change password (clears mustChangePassword flag)' })
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiResponse({ status: 200, description: 'Password changed successfully' })
+  @ApiResponse({ status: 400, description: 'Current password is incorrect' })
+  async changePassword(
+    @Body() dto: ChangePasswordDto,
+    @CurrentUser('id') userId: string,
+  ): Promise<{ message: string }> {
+    await this.authService.changePassword(userId, dto.currentPassword, dto.newPassword);
+    return { message: 'Password has been changed successfully.' };
   }
 
   private extractRefreshToken(req: Request): string {

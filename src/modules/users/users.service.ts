@@ -23,4 +23,8 @@ export class UsersService {
   async updatePasswordHash(id: string, passwordHash: string): Promise<void> {
     await this.userRepository.update(id, { passwordHash });
   }
+
+  async clearMustChangePassword(id: string): Promise<void> {
+    await this.userRepository.update(id, { mustChangePassword: false });
+  }
 }

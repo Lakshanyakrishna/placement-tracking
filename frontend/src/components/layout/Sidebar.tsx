@@ -1,8 +1,8 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { ROLES, ROUTES } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-import { LayoutDashboard, Users, Briefcase, ShieldCheck, GraduationCap, FileText } from 'lucide-react'
+import { LayoutDashboard, Users, Briefcase, ShieldCheck, GraduationCap, FileText, LogOut } from 'lucide-react'
 
 interface NavItem {
   label: string
@@ -39,17 +39,29 @@ const otherNavItems: NavItem[] = [
 ]
 
 export function Sidebar() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const userRoles = [...(user?.roles ?? [])]
   if (user?.isStudent) userRoles.push('student')
 
   const navItems = [...adminNavItems, ...otherNavItems]
   const visible = navItems.filter((item) => item.roles.some((r) => userRoles.includes(r)))
 
+  async function handleLogout() {
+    await logout()
+    navigate('/')
+  }
+
   return (
     <aside className="flex h-full w-56 flex-col border-r bg-sidebar-background text-sidebar-foreground">
-      <div className="flex h-14 items-center border-b border-sidebar-border px-6 font-semibold">
-        Placement Tracker
+      <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-4">
+        <div className="flex h-7 w-7 items-center justify-center rounded bg-stmarys text-[10px] font-bold text-white">
+          SM
+        </div>
+        <div className="leading-tight">
+          <p className="text-xs font-semibold">St. Mary's</p>
+          <p className="text-[10px] text-muted-foreground">Career Hub</p>
+        </div>
       </div>
       <nav className="flex-1 space-y-1 p-3">
         {visible.map((item) => (
@@ -70,6 +82,15 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
+      <div className="border-t border-sidebar-border p-3">
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign out
+        </button>
+      </div>
     </aside>
   )
 }

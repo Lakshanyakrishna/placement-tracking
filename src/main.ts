@@ -44,8 +44,8 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Placement Opportunity Tracker')
-    .setDescription('API for managing placement opportunities and student participation')
+    .setTitle('St. Mary\'s Career Hub')
+    .setDescription('API for managing certifications, placements, internships, and career readiness tracking')
     .setVersion('1.0.0')
     .addBearerAuth()
     .build();
