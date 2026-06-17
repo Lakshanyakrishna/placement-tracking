@@ -12,6 +12,10 @@ services:
     ports:
       - "${APP_PORT:-3000}:3000"
       - "9229:9229"
+    environment:
+      DB_HOST: db
+      STORAGE_ENDPOINT: http://minio:9000
+      MAIL_HOST: mailhog
     env_file:
       - ../.env
     volumes:

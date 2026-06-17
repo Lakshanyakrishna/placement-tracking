@@ -8,6 +8,9 @@ import AdminDashboardPage from '@/pages/admin/DashboardPage'
 import MentorDashboardPage from '@/pages/mentor/DashboardPage'
 import TeamLeaderDashboardPage from '@/pages/team-leader/DashboardPage'
 import StudentDashboardPage from '@/pages/student/DashboardPage'
+import CertificationsPage from '@/pages/student/CertificationsPage'
+import SubmissionsPage from '@/pages/student/SubmissionsPage'
+import ProfilePage from '@/pages/student/ProfilePage'
 import OpportunityListPage from '@/pages/opportunities/ListPage'
 import OpportunityCreatePage from '@/pages/opportunities/CreatePage'
 import OpportunityEditPage from '@/pages/opportunities/EditPage'
@@ -110,7 +113,7 @@ export const router = createBrowserRouter([
         path: 'student/certifications',
         element: (
           <RoleGuard allowedRoles={['student']}>
-            <StudentDashboardPage />
+            <CertificationsPage />
           </RoleGuard>
         ),
       },
@@ -118,7 +121,7 @@ export const router = createBrowserRouter([
         path: 'student/submissions',
         element: (
           <RoleGuard allowedRoles={['student']}>
-            <StudentDashboardPage />
+            <SubmissionsPage />
           </RoleGuard>
         ),
       },
@@ -126,7 +129,7 @@ export const router = createBrowserRouter([
         path: 'student/profile',
         element: (
           <RoleGuard allowedRoles={['student']}>
-            <StudentDashboardPage />
+            <ProfilePage />
           </RoleGuard>
         ),
       },
