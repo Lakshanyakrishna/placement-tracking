@@ -32,8 +32,8 @@ export async function deleteSubmission(submissionId: string): Promise<void> {
 }
 
 export async function getMySubmissions(): Promise<Submission[]> {
-  const response = await client.get<Submission[]>('/submissions/me')
-  return response.data
+  const response = await client.get<{ data: Submission[] }>('/submissions/me')
+  return response.data.data
 }
 
 export async function getDownloadUrl(fileId: string): Promise<string> {
