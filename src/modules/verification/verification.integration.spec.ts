@@ -4,6 +4,7 @@ import request from 'supertest';
 import { VerificationController } from './verification.controller';
 import { VerificationService } from './verification.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { VerificationAction } from './entities/verification-log.entity';
 
 const UUID = '550e8400-e29b-41d4-a716-446655440000';
@@ -40,6 +41,8 @@ describe('Verification Controller (Integration)', () => {
     })
       .overrideGuard(JwtAuthGuard)
       .useValue(mockGuard)
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
       .compile();
 
     app = moduleFixture.createNestApplication();

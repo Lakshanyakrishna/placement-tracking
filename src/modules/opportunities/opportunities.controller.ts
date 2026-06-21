@@ -13,6 +13,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { UuidValidationPipe } from '../../common/pipes/uuid-validation.pipe';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { OpportunitiesService } from './opportunities.service';
@@ -26,12 +28,13 @@ import { PaginationMetaDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Opportunities')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('opportunities')
 export class OpportunitiesController {
   constructor(private readonly opportunitiesService: OpportunitiesService) {}
 
   @Post()
+  @Roles('admin')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new opportunity (draft)' })
   @ApiResponse({ status: 201, description: 'Opportunity created', type: OpportunityResponseDto })
@@ -62,6 +65,7 @@ export class OpportunitiesController {
   }
 
   @Patch(':id')
+  @Roles('admin')
   @ApiOperation({ summary: 'Update an opportunity' })
   @ApiResponse({ status: 200, description: 'Opportunity updated', type: OpportunityResponseDto })
   @ApiResponse({ status: 404, description: 'Opportunity not found' })
@@ -73,6 +77,7 @@ export class OpportunitiesController {
   }
 
   @Delete(':id')
+  @Roles('admin')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a draft opportunity' })
   @ApiResponse({ status: 204, description: 'Opportunity deleted' })
@@ -83,6 +88,7 @@ export class OpportunitiesController {
   }
 
   @Post(':id/publish')
+  @Roles('admin')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Publish a draft opportunity' })
   @ApiResponse({ status: 200, description: 'Opportunity published', type: OpportunityResponseDto })
@@ -95,6 +101,7 @@ export class OpportunitiesController {
   }
 
   @Post(':id/archive')
+  @Roles('admin')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Archive a published/closed opportunity' })
   @ApiResponse({ status: 200, description: 'Opportunity archived', type: OpportunityResponseDto })
@@ -107,6 +114,7 @@ export class OpportunitiesController {
   }
 
   @Post(':id/targets')
+  @Roles('admin')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Set targets for an opportunity (replaces existing)' })
   @ApiResponse({ status: 200, description: 'Targets set', type: [TargetResponseDto] })

@@ -13,6 +13,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { GroupsService } from './groups.service';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
@@ -21,7 +23,7 @@ import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Groups')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('groups')
 export class GroupsController {
   constructor(private readonly groupsService: GroupsService) {}
@@ -42,6 +44,7 @@ export class GroupsController {
   }
 
   @Post()
+  @Roles('admin')
   @ApiOperation({ summary: 'Create a new group' })
   @ApiResponse({ status: 201, type: GroupResponseDto })
   create(@Body() dto: CreateGroupDto) {
@@ -49,6 +52,7 @@ export class GroupsController {
   }
 
   @Patch(':id')
+  @Roles('admin')
   @ApiOperation({ summary: 'Update a group' })
   @ApiResponse({ status: 200, type: GroupResponseDto })
   @ApiResponse({ status: 404, description: 'Group not found' })
@@ -57,6 +61,7 @@ export class GroupsController {
   }
 
   @Delete(':id')
+  @Roles('admin')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a group' })
   @ApiResponse({ status: 204, description: 'Group deleted' })
@@ -66,6 +71,7 @@ export class GroupsController {
   }
 
   @Get(':id/students')
+  @Roles('admin', 'mentor', 'team_leader')
   @ApiOperation({ summary: 'Get students in a group' })
   @ApiResponse({ status: 200, description: 'Array of students' })
   findStudents(@Param('id') id: string) {

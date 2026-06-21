@@ -4,6 +4,7 @@ import request from 'supertest';
 import { OpportunitiesController } from './opportunities.controller';
 import { OpportunitiesService } from './opportunities.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { OpportunityState, OpportunityType } from './entities/opportunity.entity';
 import { TargetType } from './entities/opportunity-target.entity';
 import { OpportunityResponseDto } from './dto/opportunity-response.dto';
@@ -71,6 +72,8 @@ describe('Opportunities Controller (Integration)', () => {
     })
       .overrideGuard(JwtAuthGuard)
       .useValue(mockGuard)
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
       .compile();
 
     app = moduleFixture.createNestApplication();

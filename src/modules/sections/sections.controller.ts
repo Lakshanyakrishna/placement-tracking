@@ -14,6 +14,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { SectionsService } from './sections.service';
 import { CreateSectionDto } from './dto/create-section.dto';
 import { UpdateSectionDto } from './dto/update-section.dto';
@@ -21,7 +23,7 @@ import { SectionResponseDto } from './dto/section-response.dto';
 import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Sections')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 @Controller('sections')
 export class SectionsController {
@@ -44,12 +46,14 @@ export class SectionsController {
   }
 
   @Post()
+  @Roles('admin')
   @ApiOperation({ summary: 'Create a new section' })
   async create(@Body() dto: CreateSectionDto): Promise<SectionResponseDto> {
     return this.sectionsService.create(dto);
   }
 
   @Patch(':id')
+  @Roles('admin')
   @ApiOperation({ summary: 'Update a section' })
   async update(
     @Param('id') id: string,
@@ -59,6 +63,7 @@ export class SectionsController {
   }
 
   @Delete(':id')
+  @Roles('admin')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a section' })
   async remove(@Param('id') id: string): Promise<void> {
@@ -78,6 +83,7 @@ export class SectionsController {
   }
 
   @Get(':id/students')
+  @Roles('admin', 'mentor')
   @ApiOperation({ summary: 'Get all students in a section' })
   async findStudents(@Param('id') id: string): Promise<StudentResponseDto[]> {
     return this.sectionsService.findStudentsBySection(id);

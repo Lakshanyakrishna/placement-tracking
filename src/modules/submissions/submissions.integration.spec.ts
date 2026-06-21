@@ -4,6 +4,7 @@ import request from 'supertest';
 import { SubmissionsController } from './submissions.controller';
 import { SubmissionsService } from './submissions.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 
 const UUID = '550e8400-e29b-41d4-a716-446655440000';
 
@@ -45,6 +46,8 @@ describe('Submissions Controller (Integration)', () => {
     })
       .overrideGuard(JwtAuthGuard)
       .useValue(mockGuard)
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
       .compile();
 
     app = moduleFixture.createNestApplication();

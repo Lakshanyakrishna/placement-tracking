@@ -4,6 +4,7 @@ import request from 'supertest';
 import { BranchesController } from './branches.controller';
 import { BranchesService } from './branches.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { BranchResponseDto } from './dto/branch-response.dto';
 
 const mockBranch: BranchResponseDto = {
@@ -39,6 +40,8 @@ describe('Branches Controller (Integration)', () => {
     })
       .overrideGuard(JwtAuthGuard)
       .useValue(mockGuard)
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
       .compile();
 
     app = moduleFixture.createNestApplication();

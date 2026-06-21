@@ -14,6 +14,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { UuidValidationPipe } from '../../common/pipes/uuid-validation.pipe';
 import { BranchesService } from './branches.service';
 import { PaginationQueryDto } from '../../common/dto/pagination.dto';
@@ -23,7 +25,7 @@ import { BranchResponseDto } from './dto/branch-response.dto';
 
 @ApiTags('Branches')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('branches')
 export class BranchesController {
   constructor(private readonly branchesService: BranchesService) {}
@@ -52,6 +54,7 @@ export class BranchesController {
   }
 
   @Post()
+  @Roles('admin')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new branch' })
   @ApiResponse({ status: 201, description: 'Branch created', type: BranchResponseDto })
@@ -61,6 +64,7 @@ export class BranchesController {
   }
 
   @Patch(':id')
+  @Roles('admin')
   @ApiOperation({ summary: 'Update a branch' })
   @ApiResponse({ status: 200, description: 'Branch updated', type: BranchResponseDto })
   @ApiResponse({ status: 404, description: 'Branch not found' })
@@ -72,6 +76,7 @@ export class BranchesController {
   }
 
   @Delete(':id')
+  @Roles('admin')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a branch' })
   @ApiResponse({ status: 204, description: 'Branch deleted' })

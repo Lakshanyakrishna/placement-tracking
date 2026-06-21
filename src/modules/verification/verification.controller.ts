@@ -11,6 +11,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { UuidValidationPipe } from '../../common/pipes/uuid-validation.pipe';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { VerificationService } from './verification.service';
@@ -21,7 +23,7 @@ import { PaginationQueryDto, PaginationMetaDto } from '../../common/dto/paginati
 
 @ApiTags('Verifications')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('verifications')
 export class VerificationController {
   constructor(private readonly verificationService: VerificationService) {}
@@ -36,6 +38,7 @@ export class VerificationController {
   }
 
   @Get('group/:groupId')
+  @Roles('admin', 'mentor', 'team_leader')
   @ApiOperation({ summary: 'Get verification logs by group' })
   @ApiResponse({ status: 200, description: 'Verification logs for group' })
   async findByGroup(
@@ -46,6 +49,7 @@ export class VerificationController {
   }
 
   @Get('section/:sectionId')
+  @Roles('admin', 'mentor')
   @ApiOperation({ summary: 'Get verification logs by section' })
   @ApiResponse({ status: 200, description: 'Verification logs for section' })
   async findBySection(
@@ -56,6 +60,7 @@ export class VerificationController {
   }
 
   @Get('submission/:submissionId')
+  @Roles('admin', 'mentor', 'team_leader')
   @ApiOperation({ summary: 'Get verification logs for a submission' })
   @ApiResponse({ status: 200, description: 'Verification logs for submission' })
   @ApiResponse({ status: 404, description: 'Submission not found' })

@@ -16,6 +16,8 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { UuidValidationPipe } from '../../common/pipes/uuid-validation.pipe';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SubmissionsService } from './submissions.service';
@@ -27,7 +29,7 @@ import { UploadFile } from './interfaces/upload-file.interface';
 
 @ApiTags('Submissions')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('submissions')
 export class SubmissionsController {
   constructor(private readonly submissionsService: SubmissionsService) {}
@@ -79,6 +81,7 @@ export class SubmissionsController {
   }
 
   @Get('group/:groupId')
+  @Roles('admin', 'mentor', 'team_leader')
   @ApiOperation({ summary: 'Get submissions by group' })
   @ApiResponse({ status: 200, description: 'Submissions for group' })
   async findByGroup(
@@ -89,6 +92,7 @@ export class SubmissionsController {
   }
 
   @Get('section/:sectionId')
+  @Roles('admin', 'mentor')
   @ApiOperation({ summary: 'Get submissions by section' })
   @ApiResponse({ status: 200, description: 'Submissions for section' })
   async findBySection(

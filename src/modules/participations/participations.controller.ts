@@ -12,6 +12,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { UuidValidationPipe } from '../../common/pipes/uuid-validation.pipe';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ParticipationsService } from './participations.service';
@@ -23,7 +25,7 @@ import { PaginationQueryDto, PaginationMetaDto } from '../../common/dto/paginati
 
 @ApiTags('Participations')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('participations')
 export class ParticipationsController {
   constructor(private readonly participationsService: ParticipationsService) {}
@@ -75,6 +77,7 @@ export class ParticipationsController {
   }
 
   @Get('opportunity/:opportunityId')
+  @Roles('admin', 'mentor', 'team_leader')
   @ApiOperation({ summary: 'Get participations by opportunity' })
   @ApiResponse({ status: 200, description: 'Participations for opportunity' })
   async findByOpportunity(
@@ -85,6 +88,7 @@ export class ParticipationsController {
   }
 
   @Get('group/:groupId')
+  @Roles('admin', 'mentor', 'team_leader')
   @ApiOperation({ summary: 'Get participations by group' })
   @ApiResponse({ status: 200, description: 'Participations for group' })
   async findByGroup(
@@ -95,6 +99,7 @@ export class ParticipationsController {
   }
 
   @Get('section/:sectionId')
+  @Roles('admin', 'mentor')
   @ApiOperation({ summary: 'Get participations by section' })
   @ApiResponse({ status: 200, description: 'Participations for section' })
   async findBySection(
@@ -105,6 +110,7 @@ export class ParticipationsController {
   }
 
   @Get('mentor/:mentorId')
+  @Roles('admin', 'mentor')
   @ApiOperation({ summary: 'Get participations by mentor' })
   @ApiResponse({ status: 200, description: 'Participations for mentor sections' })
   async findByMentor(
