@@ -8,9 +8,10 @@ import { FileReference } from './entities/file-reference.entity';
 import { Participation } from '../participations/entities/participation.entity';
 import { Enrollment } from '../enrollments/entities/enrollment.entity';
 import { Opportunity } from '../opportunities/entities/opportunity.entity';
+import { IamModule } from '../iam/iam.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Submission, SubmissionFile, FileReference, Participation, Enrollment, Opportunity])],
+  imports: [TypeOrmModule.forFeature([Submission, SubmissionFile, FileReference, Participation, Enrollment, Opportunity]), IamModule],
   controllers: [SubmissionsController],
   providers: [SubmissionsService],
   exports: [SubmissionsService],

@@ -33,6 +33,8 @@ export interface StudentDashboard {
   submitted: number
   verified: number
   completed: number
+  availableOpportunities: number
+  rejected: number
 }
 
 export interface GroupPerformanceRow {

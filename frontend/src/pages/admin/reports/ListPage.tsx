@@ -1,6 +1,15 @@
+import { useQuery } from '@tanstack/react-query'
+import * as sectionsApi from '@/api/sections.api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function ReportsListPage() {
+  const { data: sections } = useQuery({
+    queryKey: ['sections'],
+    queryFn: () => sectionsApi.listSections(),
+  })
+
+  const sectionName = sections?.[0]?.code ?? 'Section'
+
   return (
     <div className="space-y-6">
       <div>
@@ -17,7 +26,7 @@ export default function ReportsListPage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Overall certification completion metrics for IV-AI&DS-A
+              Overall certification completion metrics for {sectionName}
             </p>
           </CardContent>
         </Card>

@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere, Like } from 'typeorm';
 import { Branch } from './entities/branch.entity';
+import { Section } from '../sections/entities/section.entity';
 import { PaginationQueryDto, PaginationMetaDto, createPaginationMeta, parseSort } from '../../common/dto/pagination.dto';
 import { CreateBranchDto } from './dto/create-branch.dto';
 import { UpdateBranchDto } from './dto/update-branch.dto';
@@ -12,6 +13,8 @@ export class BranchesService {
   constructor(
     @InjectRepository(Branch)
     private readonly repository: Repository<Branch>,
+    @InjectRepository(Section)
+    private readonly sectionRepository: Repository<Section>,
   ) {}
 
   async findAll(query: PaginationQueryDto): Promise<{ data: BranchResponseDto[]; meta: PaginationMetaDto }> {
@@ -66,6 +69,14 @@ export class BranchesService {
     if (!entity) {
       throw new NotFoundException(`Branch with id "${id}" not found`);
     }
-    await this.repository.remove(entity);
+    const sectionCount = await this.sectionRepository.count({
+      where: { branchId: id },
+    });
+    if (sectionCount > 0) {
+      throw new ConflictException(
+        `Cannot delete branch "${entity.name}": ${sectionCount} section(s) are still assigned. Remove or reassign sections first.`,
+      );
+    }
+    await this.repository.softRemove(entity);
   }
 }

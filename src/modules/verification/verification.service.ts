@@ -86,7 +86,20 @@ export class VerificationService {
   async findByGroup(
     groupId: string,
     query: PaginationQueryDto,
+    user: { id: string; roles?: Array<{ role: string }>; isStudent?: boolean },
   ): Promise<{ data: VerificationLogResponseDto[]; meta: PaginationMetaDto }> {
+    const userRoles = (user.roles ?? []).map(r => r.role);
+    if (user.isStudent) userRoles.push('student');
+    const isAdmin = userRoles.includes('admin');
+    const isTeamLeader = userRoles.includes('team_leader');
+
+    if (isTeamLeader && !isAdmin) {
+      const groups = await this.iamService.findTeamLeaderGroups(user.id);
+      if (!groups.some(g => g.id === groupId)) {
+        throw new ForbiddenException('You can only view verification logs for your own groups');
+      }
+    }
+
     const { field, direction } = parseSort(query.sort);
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
@@ -132,7 +145,20 @@ export class VerificationService {
   async findBySection(
     sectionId: string,
     query: PaginationQueryDto,
+    user: { id: string; roles?: Array<{ role: string }>; isStudent?: boolean },
   ): Promise<{ data: VerificationLogResponseDto[]; meta: PaginationMetaDto }> {
+    const userRoles = (user.roles ?? []).map(r => r.role);
+    if (user.isStudent) userRoles.push('student');
+    const isAdmin = userRoles.includes('admin');
+    const isMentor = userRoles.includes('mentor');
+
+    if (isMentor && !isAdmin) {
+      const sections = await this.iamService.findMentorSections(user.id);
+      if (!sections.some(s => s.id === sectionId)) {
+        throw new ForbiddenException('You can only view verification logs for your own sections');
+      }
+    }
+
     const { field, direction } = parseSort(query.sort);
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
@@ -177,10 +203,38 @@ export class VerificationService {
 
   async findBySubmission(
     submissionId: string,
+    user: { id: string; roles?: Array<{ role: string }>; isStudent?: boolean },
   ): Promise<{ data: VerificationLogResponseDto[] }> {
-    const submission = await this.submissionRepository.findOneBy({ id: submissionId });
+    const submission = await this.submissionRepository.findOne({
+      where: { id: submissionId },
+      relations: ['participation', 'participation.enrollment'],
+    });
     if (!submission) {
       throw new NotFoundException(`Submission with id "${submissionId}" not found`);
+    }
+
+    const userRoles = (user.roles ?? []).map(r => r.role);
+    if (user.isStudent) userRoles.push('student');
+    const isAdmin = userRoles.includes('admin');
+    const isTeamLeader = userRoles.includes('team_leader');
+    const isMentor = userRoles.includes('mentor');
+
+    if (!isAdmin) {
+      if (isTeamLeader) {
+        const groups = await this.iamService.findTeamLeaderGroups(user.id);
+        const enrollment = submission.participation?.enrollment;
+        const groupIds = groups.map(g => g.id);
+        if (!enrollment?.groupId || !groupIds.includes(enrollment.groupId)) {
+          throw new ForbiddenException('You can only view verification logs for your own group\'s submissions');
+        }
+      } else if (isMentor) {
+        const sections = await this.iamService.findMentorSections(user.id);
+        const enrollment = submission.participation?.enrollment;
+        const sectionIds = sections.map(s => s.id);
+        if (!enrollment?.sectionId || !sectionIds.includes(enrollment.sectionId)) {
+          throw new ForbiddenException('You can only view verification logs for your own section\'s submissions');
+        }
+      }
     }
 
     const logs = await this.logRepository.find({

@@ -59,8 +59,9 @@ export class ParticipationsController {
   @ApiResponse({ status: 404, description: 'Participation not found' })
   async findOne(
     @Param('id', UuidValidationPipe) id: string,
+    @CurrentUser() user: any,
   ): Promise<ParticipationResponseDto> {
-    return this.participationsService.findOne(id);
+    return this.participationsService.findOne(id, user);
   }
 
   @Patch(':id/status')
@@ -94,8 +95,9 @@ export class ParticipationsController {
   async findByGroup(
     @Param('groupId', UuidValidationPipe) groupId: string,
     @Query() query: PaginationQueryDto,
+    @CurrentUser() user: any,
   ): Promise<{ data: ParticipationResponseDto[]; meta: PaginationMetaDto }> {
-    return this.participationsService.findByGroup(groupId, query);
+    return this.participationsService.findByGroup(groupId, query, user);
   }
 
   @Get('section/:sectionId')
@@ -105,8 +107,9 @@ export class ParticipationsController {
   async findBySection(
     @Param('sectionId', UuidValidationPipe) sectionId: string,
     @Query() query: PaginationQueryDto,
+    @CurrentUser() user: any,
   ): Promise<{ data: ParticipationResponseDto[]; meta: PaginationMetaDto }> {
-    return this.participationsService.findBySection(sectionId, query);
+    return this.participationsService.findBySection(sectionId, query, user);
   }
 
   @Get('mentor/:mentorId')
@@ -116,7 +119,8 @@ export class ParticipationsController {
   async findByMentor(
     @Param('mentorId', UuidValidationPipe) mentorId: string,
     @Query() query: PaginationQueryDto,
+    @CurrentUser() user: any,
   ): Promise<{ data: ParticipationResponseDto[]; meta: PaginationMetaDto }> {
-    return this.participationsService.findByMentor(mentorId, query);
+    return this.participationsService.findByMentor(mentorId, query, user);
   }
 }

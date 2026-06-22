@@ -95,7 +95,23 @@ export class SectionsService {
     if (!entity) {
       throw new NotFoundException(`Section with id "${id}" not found`);
     }
-    await this.repository.remove(entity);
+    const groupCount = await this.groupsRepository.count({
+      where: { sectionId: id },
+    });
+    if (groupCount > 0) {
+      throw new ConflictException(
+        `Cannot delete section: ${groupCount} group(s) are still assigned. Remove groups first.`,
+      );
+    }
+    const enrollmentCount = await this.enrollmentsRepository.count({
+      where: { sectionId: id },
+    });
+    if (enrollmentCount > 0) {
+      throw new ConflictException(
+        `Cannot delete section: ${enrollmentCount} enrollment(s) are still assigned. Remove enrollments first.`,
+      );
+    }
+    await this.repository.softRemove(entity);
   }
 
   async findGroupsBySection(sectionId: string): Promise<Group[]> {

@@ -27,7 +27,7 @@ const STUDENT_COLUMNS: ColumnDefinition[] = [
   { key: 'contact_phone', label: 'Contact Phone', required: false, maxLength: 50 },
   { key: 'branch_code', label: 'Branch Code', required: true, maxLength: 20 },
   { key: 'section_code', label: 'Section Code', required: true, maxLength: 50 },
-  { key: 'group_name', label: 'Group Name', required: false, maxLength: 100 },
+  { key: 'group_name', label: 'Group Name', required: true, maxLength: 100 },
 ];
 
 @Injectable()
@@ -131,6 +131,7 @@ export class StudentsImportService {
               name: row.name as string,
               contactPhone: (row.contact_phone as string) || null,
               isActive: true,
+              mustChangePassword: true,
             });
             await manager.save(user);
           }

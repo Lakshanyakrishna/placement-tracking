@@ -23,7 +23,8 @@ export class EnrollmentsService {
       .leftJoinAndSelect('enrollment.section', 'section')
       .leftJoinAndSelect('enrollment.group', 'group')
       .leftJoinAndSelect('enrollment.batch', 'batch')
-      .leftJoinAndSelect('enrollment.academicPeriod', 'academicPeriod');
+      .leftJoinAndSelect('enrollment.academicPeriod', 'academicPeriod')
+      .andWhere('enrollment.deleted_at IS NULL');
 
     if (search) {
       qb.andWhere('user.name ILIKE :search', { search: `%${search}%` });
@@ -97,6 +98,6 @@ export class EnrollmentsService {
 
   async remove(id: string) {
     const entity = await this.findOne(id);
-    await this.repository.remove(entity);
+    await this.repository.softRemove(entity);
   }
 }

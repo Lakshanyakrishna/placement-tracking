@@ -27,10 +27,10 @@ export class AppConfigService {
 
   get storage() {
     return {
-      endpoint: this.configService.get<string>('storage.endpoint') || 'http://localhost:9000',
+      endpoint: this.configService.get<string>('storage.endpoint') ?? '',
       region: this.configService.get<string>('storage.region') || 'us-east-1',
-      accessKeyId: this.configService.get<string>('storage.accessKeyId') || 'minioadmin',
-      secretAccessKey: this.configService.get<string>('storage.secretAccessKey') || 'minioadmin',
+      accessKeyId: this.configService.get<string>('storage.accessKeyId') ?? '',
+      secretAccessKey: this.configService.get<string>('storage.secretAccessKey') ?? '',
       bucket: this.configService.get<string>('storage.bucket') || 'placement-proofs',
       uploadUrlExpiry: this.configService.get<number>('storage.uploadUrlExpiry') || 3600,
       downloadUrlExpiry: this.configService.get<number>('storage.downloadUrlExpiry') || 300,
@@ -46,6 +46,8 @@ export class AppConfigService {
       password: this.configService.get<string>('mail.password') || '',
       from: this.configService.get<string>('mail.from') || 'noreply@placement.local',
       templateDir: this.configService.get<string>('mail.templateDir') || './templates/email',
+      secure: this.configService.get('mail.secure') as boolean | undefined,
+      rejectUnauthorized: (this.configService.get<boolean>('mail.rejectUnauthorized')) ?? true,
     };
   }
 

@@ -1,35 +1,44 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { ErrorState } from '@/components/shared/ErrorState'
 import * as participationsApi from '@/api/participations.api'
 import * as submissionsApi from '@/api/submissions.api'
-import { Eye } from 'lucide-react'
-import type { Participation } from '@/types/participation'
+import * as opportunitiesApi from '@/api/opportunities.api'
+import { FileText, Eye, Upload, Play, Sparkles, XCircle } from 'lucide-react'
 
-type StatusFilter = 'all' | 'not_started' | 'in_progress' | 'submitted' | 'verified' | 'completed' | 'rejected'
-
-const STATUS_BADGE: Record<string, { label: string; className: string }> = {
-  not_started: { label: 'Not Started', className: 'bg-gray-100 text-gray-700' },
-  in_progress: { label: 'In Progress', className: 'bg-blue-100 text-blue-700' },
-  submitted: { label: 'Submitted', className: 'bg-yellow-100 text-yellow-700' },
-  verified: { label: 'Verified', className: 'bg-green-100 text-green-700' },
-  completed: { label: 'Completed', className: 'bg-emerald-100 text-emerald-700' },
-  rejected: { label: 'Rejected', className: 'bg-red-100 text-red-700' },
-}
+type StatusFilter = 'all' | 'available' | 'not_started' | 'in_progress' | 'submitted' | 'verified' | 'completed' | 'rejected'
 
 const FILTERS: { key: StatusFilter; label: string }[] = [
   { key: 'all', label: 'All' },
+  { key: 'available', label: 'Available' },
   { key: 'not_started', label: 'Not Started' },
   { key: 'in_progress', label: 'In Progress' },
   { key: 'submitted', label: 'Submitted' },
   { key: 'verified', label: 'Verified' },
   { key: 'completed', label: 'Completed' },
+  { key: 'rejected', label: 'Rejected' },
 ]
 
+function getUrgency(closesAt: string | null | undefined): { label: string; className: string } | null {
+  if (!closesAt) return null
+  const days = Math.ceil((new Date(closesAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+  if (days < 0) return { label: `${Math.abs(days)} days overdue`, className: 'text-red-600' }
+  if (days <= 7) return { label: `${days} days left`, className: 'text-orange-600' }
+  if (days <= 30) return { label: `${days} days left`, className: 'text-yellow-600' }
+  return null
+}
+
 export default function CertificationsPage() {
-  const [filter, setFilter] = useState<StatusFilter>('all')
+  const [searchParams] = useSearchParams()
+  const [filter, setFilter] = useState<StatusFilter>(() => {
+    const f = searchParams.get('filter')
+    if (f === 'rejected') return 'rejected'
+    return 'all'
+  })
   const [uploading, setUploading] = useState<string | null>(null)
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -43,6 +52,18 @@ export default function CertificationsPage() {
     },
   })
 
+  const { data: availableOpps, isLoading: availableLoading } = useQuery({
+    queryKey: ['available-opportunities'],
+    queryFn: async () => {
+      return await opportunitiesApi.getAvailableOpportunities()
+    },
+  })
+
+  useEffect(() => {
+    const f = searchParams.get('filter')
+    if (f === 'rejected') setFilter('rejected')
+  }, [searchParams])
+
   function formatDate(d: string | null): string {
     if (!d) return '\u2014'
     return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -55,9 +76,9 @@ export default function CertificationsPage() {
     } catch { /* ignore */ }
   }
 
-  async function handleContinue(participationId: string) {
+  async function handleContinue(id: string) {
     try {
-      await participationsApi.updateParticipationStatus(participationId, { status: 'in_progress' })
+      await participationsApi.updateParticipationStatus(id, { status: 'in_progress' })
       refetch()
     } catch { /* ignore */ }
   }
@@ -92,20 +113,30 @@ export default function CertificationsPage() {
     }
   }
 
-  if (isLoading) return <LoadingSpinner fullPage />
+  if (isLoading && availableLoading) return <LoadingSpinner fullPage />
   if (error) return <ErrorState onRetry={refetch} />
 
   const filtered = filter === 'all'
     ? (parts ?? [])
     : (parts ?? []).filter((p) => p.status === filter)
 
+  const statusColor = (status: string): string => {
+    const map: Record<string, string> = {
+      not_started: 'bg-gray-100 text-gray-700',
+      in_progress: 'bg-blue-100 text-blue-700',
+      submitted: 'bg-yellow-100 text-yellow-700',
+      verified: 'bg-green-100 text-green-700',
+      completed: 'bg-emerald-100 text-emerald-700',
+      rejected: 'bg-red-100 text-red-700',
+    }
+    return map[status] ?? 'bg-gray-100 text-gray-700'
+  }
+
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold">My Certifications</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          View and manage all your assigned certifications.
-        </p>
+        <h1 className="text-xl font-semibold text-[#111827]">My Certifications</h1>
+        <p className="mt-1 text-sm text-[#6B7280]">View and manage all your assigned and available certifications.</p>
       </div>
 
       <input
@@ -116,16 +147,15 @@ export default function CertificationsPage() {
         onChange={handleFileSelected}
       />
 
-      {/* Status Filter Tabs */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {FILTERS.map((f) => (
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               filter === f.key
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                ? 'bg-[#111827] text-white'
+                : 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]'
             }`}
           >
             {f.label}
@@ -137,105 +167,126 @@ export default function CertificationsPage() {
         <p className="text-sm text-red-600">{uploadError}</p>
       )}
 
-      {/* Certifications Table */}
-      <div className="rounded-md border overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/50">
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Certification Name</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Assigned Date</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Deadline</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-              <th className="px-4 py-3 text-right font-medium text-muted-foreground">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
-                  No certifications match this filter.
-                </td>
-              </tr>
-            )}
-            {filtered.map((cert) => {
-              const badge = STATUS_BADGE[cert.status] ?? {
-                label: cert.status,
-                className: 'bg-gray-100 text-gray-700',
-              }
+      {filter === 'available' ? (
+        <>
+          {(availableOpps ?? []).length === 0 && (
+            <div className="rounded-xl border py-12 text-center text-sm text-[#6B7280]">
+              <Sparkles className="mx-auto h-8 w-8 mb-2 text-[#D1D5DB]" />
+              No new certifications available right now.
+            </div>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {(availableOpps ?? []).map((opp) => {
+              const urgency = getUrgency(opp.closesAt)
               return (
-                <tr key={cert.id} className="border-b last:border-0 hover:bg-muted/50">
-                  <td className="px-4 py-3 font-medium">
-                    {cert.opportunity?.title ?? cert.opportunityTitle ?? 'Unknown'}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {formatDate(cert.createdAt)}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {formatDate(cert.opportunity?.closesAt ?? null)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${badge.className}`}>
-                      {badge.label}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {cert.status === 'not_started' && (
-                      <Button
-                        size="sm"
-                        className="h-7 text-xs"
-                        onClick={() => handleStart(cert.opportunityId)}
-                      >
-                        Start
-                      </Button>
+                <Card key={opp.id} className="hover:shadow-md transition-shadow border-purple-100">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <p className="text-sm font-medium text-[#111827]">{opp.title}</p>
+                      <span className="shrink-0 rounded bg-purple-100 px-2 py-0.5 text-[10px] font-medium text-purple-700">
+                        Available
+                      </span>
+                    </div>
+                    {urgency && (
+                      <p className={`text-xs font-medium mb-1 ${urgency.className}`}>{urgency.label}</p>
                     )}
-                    {cert.status === 'in_progress' && (
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => handleContinue(cert.id)}
-                        >
-                          Continue
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
-                          onClick={() => handleUploadClick(cert.id)}
-                          disabled={uploading === cert.id}
-                        >
-                          {uploading === cert.id ? 'Uploading...' : 'Upload'}
-                        </Button>
-                      </div>
-                    )}
-                    {cert.status === 'submitted' && (
-                      <Button size="sm" variant="outline" className="h-7 text-xs">
-                        <Eye className="h-3 w-3 mr-1" />
-                        View Submission
-                      </Button>
-                    )}
-                    {(cert.status === 'verified' || cert.status === 'completed') && (
-                      <Button size="sm" variant="outline" className="h-7 text-xs">
-                        <Eye className="h-3 w-3 mr-1" />
-                        View Certificate
-                      </Button>
-                    )}
-                    {cert.status === 'rejected' && (
-                      <Button
-                        size="sm"
-                        className="h-7 text-xs"
-                        onClick={() => handleUploadClick(cert.id)}
-                      >
-                        Re-upload
-                      </Button>
-                    )}
-                  </td>
-                </tr>
+                    <div className="space-y-1 text-xs text-[#6B7280] mb-4">
+                      <p>Type: {opp.opportunityType}</p>
+                      {opp.closesAt && <p>Deadline: {formatDate(opp.closesAt)}</p>}
+                    </div>
+                    <Button size="sm" className="h-7 text-xs" onClick={() => handleStart(opp.id)}>
+                      <Play className="h-3 w-3 mr-1" />
+                      Start
+                    </Button>
+                  </CardContent>
+                </Card>
               )
             })}
-          </tbody>
-        </table>
-      </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {filtered.length === 0 && (
+            <div className="rounded-xl border py-12 text-center text-sm text-[#6B7280]">
+              <FileText className="mx-auto h-8 w-8 mb-2 text-[#D1D5DB]" />
+              No certifications match this filter.
+            </div>
+          )}
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((cert) => {
+              const urgency = getUrgency(cert.opportunity?.closesAt)
+              return (
+                <Card key={cert.id} className={`hover:shadow-md transition-shadow ${cert.status === 'rejected' ? 'border-red-200' : ''}`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <p className="text-sm font-medium text-[#111827]">
+                        {cert.opportunity?.title ?? cert.opportunityTitle ?? 'Unknown'}
+                      </p>
+                      <span className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-medium ${statusColor(cert.status)}`}>
+                        {cert.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </span>
+                    </div>
+
+                    {urgency && (
+                      <p className={`text-xs font-medium mb-1 ${urgency.className}`}>{urgency.label}</p>
+                    )}
+
+                    <div className="space-y-1 text-xs text-[#6B7280] mb-4">
+                      <p>Assigned: {formatDate(cert.createdAt)}</p>
+                      <p>Deadline: {formatDate(cert.opportunity?.closesAt ?? null)}</p>
+                    </div>
+
+                    {cert.status === 'rejected' && cert.notes && (
+                      <div className="mb-3 flex items-start gap-1.5 rounded-md bg-red-50 p-2 text-xs text-red-700">
+                        <XCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                        <span>{cert.notes}</span>
+                      </div>
+                    )}
+
+                    <div className="flex gap-1.5">
+                      {cert.status === 'not_started' && (
+                        <Button size="sm" className="h-7 text-xs" onClick={() => handleStart(cert.opportunityId)}>
+                          <Play className="h-3 w-3 mr-1" />
+                          Start
+                        </Button>
+                      )}
+                      {cert.status === 'in_progress' && (
+                        <>
+                          <Button size="sm" className="h-7 text-xs" onClick={() => handleContinue(cert.id)}>
+                            Continue
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleUploadClick(cert.id)} disabled={uploading === cert.id}>
+                            <Upload className="h-3 w-3 mr-1" />
+                            {uploading === cert.id ? 'Uploading...' : 'Upload'}
+                          </Button>
+                        </>
+                      )}
+                      {cert.status === 'submitted' && (
+                        <Button size="sm" variant="outline" className="h-7 text-xs">
+                          <Eye className="h-3 w-3 mr-1" />
+                          View Submission
+                        </Button>
+                      )}
+                      {(cert.status === 'verified' || cert.status === 'completed') && (
+                        <Button size="sm" variant="outline" className="h-7 text-xs">
+                          <Eye className="h-3 w-3 mr-1" />
+                          View Certificate
+                        </Button>
+                      )}
+                      {cert.status === 'rejected' && (
+                        <Button size="sm" className="h-7 text-xs" onClick={() => handleUploadClick(cert.id)}>
+                          Re-upload
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </>
+      )}
     </div>
   )
 }

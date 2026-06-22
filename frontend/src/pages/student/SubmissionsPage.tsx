@@ -1,13 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { ErrorState } from '@/components/shared/ErrorState'
 import * as submissionsApi from '@/api/submissions.api'
 import * as participationsApi from '@/api/participations.api'
 import { Download, FileText, XCircle, CheckCircle, Clock } from 'lucide-react'
-import type { Submission } from '@/types/submission'
+import type { Submission, SubmissionFile } from '@/types/submission'
 import type { Participation } from '@/types/participation'
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
@@ -47,14 +46,15 @@ export default function SubmissionsPage() {
     })
   }
 
-  async function handleDownload(fileId: string, fileName: string) {
+  async function handleDownload(file: SubmissionFile) {
     try {
-      const url = await submissionsApi.getDownloadUrl(fileId)
+      const blob = await submissionsApi.downloadFile(file.id)
+      const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = fileName
-      a.target = '_blank'
+      a.download = file.originalFilename
       a.click()
+      window.URL.revokeObjectURL(url)
     } catch { /* ignore */ }
   }
 
@@ -70,7 +70,7 @@ export default function SubmissionsPage() {
     }))
     .sort((a, b) => new Date(b.submission.submittedAt).getTime() - new Date(a.submission.submittedAt).getTime())
 
-  const title = (row: SubmissionRow): string =>
+  const certTitle = (row: SubmissionRow): string =>
     row.participation?.opportunity?.title ??
     row.participation?.opportunityTitle ??
     'Unknown Certification'
@@ -81,15 +81,13 @@ export default function SubmissionsPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold">My Submissions</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Certificates you have submitted for verification.
-        </p>
+        <h1 className="text-xl font-semibold text-[#111827]">My Submissions</h1>
+        <p className="mt-1 text-sm text-[#6B7280]">Certificates you have submitted for verification.</p>
       </div>
 
       {rows.length === 0 && (
-        <div className="rounded-md border py-10 text-center text-sm text-muted-foreground">
-          <FileText className="mx-auto h-8 w-8 mb-2 text-muted-foreground/60" />
+        <div className="rounded-xl border py-12 text-center text-sm text-[#6B7280]">
+          <FileText className="mx-auto h-8 w-8 mb-2 text-[#D1D5DB]" />
           No submissions yet. Complete a certification and upload the certificate.
         </div>
       )}
@@ -106,13 +104,13 @@ export default function SubmissionsPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium text-sm">{title(row)}</h3>
-                      <Badge className={`${badge.className} text-xs font-medium`}>
+                      <h3 className="font-medium text-sm text-[#111827]">{certTitle(row)}</h3>
+                      <span className={`rounded px-2 py-0.5 text-[10px] font-medium ${badge.className}`}>
                         {badge.label}
-                      </Badge>
+                      </span>
                     </div>
 
-                    <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                    <div className="mt-2 space-y-1 text-xs text-[#6B7280]">
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         Submitted: {formatDate(row.submission.submittedAt)}
@@ -126,7 +124,6 @@ export default function SubmissionsPage() {
                       )}
                     </div>
 
-                    {/* Verifier Comment */}
                     {status(row) === 'rejected' && row.submission.rejectionReason && (
                       <div className="mt-2 flex items-start gap-1.5 rounded-md bg-red-50 p-2 text-xs text-red-700">
                         <XCircle className="h-3 w-3 mt-0.5 shrink-0" />
@@ -141,8 +138,7 @@ export default function SubmissionsPage() {
                     )}
                   </div>
 
-                  {/* Files */}
-                  {row.submission.files.length > 0 && (
+                  {row.submission.files && row.submission.files.length > 0 && (
                     <div className="shrink-0 space-y-1">
                       {row.submission.files.map((f) => (
                         <Button
@@ -150,10 +146,10 @@ export default function SubmissionsPage() {
                           size="sm"
                           variant="outline"
                           className="h-7 text-xs"
-                          onClick={() => handleDownload(f.id, f.fileName)}
+                          onClick={() => handleDownload(f)}
                         >
                           <Download className="h-3 w-3 mr-1" />
-                          {f.fileName}
+                          {f.originalFilename}
                         </Button>
                       ))}
                     </div>

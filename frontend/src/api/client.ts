@@ -50,7 +50,7 @@ client.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest._isRefresh) {
       if (isRefreshing) {
         return new Promise<string | null>((resolve, reject) => {
           failedQueue.push({ resolve, reject })
@@ -67,9 +67,10 @@ client.interceptors.response.use(
         const { data } = await axios.post(
           `${client.defaults.baseURL}/auth/refresh`,
           {},
-          { withCredentials: true },
+          { withCredentials: true, _isRefresh: true } as any,
         )
-        const newToken: string = data.accessToken
+        const unwrapped = data && typeof data === 'object' && 'success' in data && 'data' in data ? data.data : data
+        const newToken: string = unwrapped.accessToken
         setAccessToken(newToken)
         processQueue(null, newToken)
         originalRequest.headers.Authorization = `Bearer ${newToken}`

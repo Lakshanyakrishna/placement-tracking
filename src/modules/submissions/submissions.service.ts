@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
-import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
 import { Submission } from './entities/submission.entity';
 import { SubmissionFile } from './entities/submission-file.entity';
@@ -10,11 +9,13 @@ import { Participation, ParticipationStatus } from '../participations/entities/p
 import { Enrollment } from '../enrollments/entities/enrollment.entity';
 import { Opportunity, OpportunityState } from '../opportunities/entities/opportunity.entity';
 import { StorageService } from '../storage/storage.service';
+import { IamService } from '../iam/iam.service';
 import { PaginationQueryDto, PaginationMetaDto, createPaginationMeta, parseSort } from '../../common/dto/pagination.dto';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { UpdateSubmissionDto } from './dto/update-submission.dto';
 import { SubmissionResponseDto, SubmissionFileDto } from './dto/submission-response.dto';
 import { UploadFile } from './interfaces/upload-file.interface';
+import { Readable } from 'node:stream';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = [
@@ -42,6 +43,7 @@ export class SubmissionsService {
     @InjectRepository(Opportunity)
     private readonly opportunityRepository: Repository<Opportunity>,
     private readonly storageService: StorageService,
+    private readonly iamService: IamService,
   ) {}
 
   async create(
@@ -82,22 +84,14 @@ export class SubmissionsService {
 
     this.validateFiles(files);
 
-    const client = this.storageService.getClient();
-    const bucket = this.storageService.getBucket();
-
     const fileRefs: FileReference[] = [];
     for (const file of files) {
       const key = `submissions/${dto.participationId}/${uuidv4()}-${file.originalname}`;
 
-      await client.send(new PutObjectCommand({
-        Bucket: bucket,
-        Key: key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-      }));
+      await this.storageService.upload(key, file.buffer, file.mimetype);
 
       const fileRef = this.fileReferenceRepository.create({
-        bucket,
+        bucket: this.storageService.getBucket(),
         key,
         originalFilename: file.originalname,
         mimeType: file.mimetype,
@@ -143,11 +137,25 @@ export class SubmissionsService {
     return this.buildResponse(savedSubmission.id);
   }
 
-  async findOne(id: string): Promise<SubmissionResponseDto> {
-    const submission = await this.submissionRepository.findOneBy({ id });
+  async findOne(id: string, user: { id: string; roles?: Array<{ role: string }>; isStudent?: boolean }): Promise<SubmissionResponseDto> {
+    const submission = await this.submissionRepository.findOne({
+      where: { id },
+      relations: ['participation', 'participation.enrollment'],
+    });
     if (!submission) {
       throw new NotFoundException(`Submission with id "${id}" not found`);
     }
+
+    const userRoles = (user.roles ?? []).map(r => r.role);
+    if (user.isStudent) userRoles.push('student');
+    const isAdmin = userRoles.includes('admin');
+    const isSubmitter = submission.submittedBy === user.id;
+    const isTeamLeader = submission.participation?.teamLeaderUserId === user.id;
+
+    if (!isAdmin && !isSubmitter && !isTeamLeader) {
+      throw new ForbiddenException('You do not have access to this submission');
+    }
+
     return this.buildResponse(id);
   }
 
@@ -173,7 +181,20 @@ export class SubmissionsService {
   async findByGroup(
     groupId: string,
     query: PaginationQueryDto,
+    user: { id: string; roles?: Array<{ role: string }>; isStudent?: boolean },
   ): Promise<{ data: SubmissionResponseDto[]; meta: PaginationMetaDto }> {
+    const userRoles = (user.roles ?? []).map(r => r.role);
+    if (user.isStudent) userRoles.push('student');
+    const isAdmin = userRoles.includes('admin');
+    const isTeamLeader = userRoles.includes('team_leader');
+
+    if (isTeamLeader && !isAdmin) {
+      const groups = await this.iamService.findTeamLeaderGroups(user.id);
+      if (!groups.some(g => g.id === groupId)) {
+        throw new ForbiddenException('You can only view submissions for your own groups');
+      }
+    }
+
     const { field, direction } = parseSort(query.sort);
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
@@ -208,7 +229,20 @@ export class SubmissionsService {
   async findBySection(
     sectionId: string,
     query: PaginationQueryDto,
+    user: { id: string; roles?: Array<{ role: string }>; isStudent?: boolean },
   ): Promise<{ data: SubmissionResponseDto[]; meta: PaginationMetaDto }> {
+    const userRoles = (user.roles ?? []).map(r => r.role);
+    if (user.isStudent) userRoles.push('student');
+    const isAdmin = userRoles.includes('admin');
+    const isMentor = userRoles.includes('mentor');
+
+    if (isMentor && !isAdmin) {
+      const sections = await this.iamService.findMentorSections(user.id);
+      if (!sections.some(s => s.id === sectionId)) {
+        throw new ForbiddenException('You can only view submissions for your own sections');
+      }
+    }
+
     const { field, direction } = parseSort(query.sort);
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
@@ -274,15 +308,8 @@ export class SubmissionsService {
         relations: ['fileReference'],
       });
 
-      const client = this.storageService.getClient();
-      const bucket = this.storageService.getBucket();
-
       for (const sf of existingFiles) {
-        try {
-          await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: sf.fileReference.key }));
-        } catch {
-          // ignore deletion errors for old files
-        }
+        await this.storageService.delete(sf.fileReference.key);
       }
       await this.submissionFileRepository.delete({ submissionId: id });
       await this.fileReferenceRepository.delete({
@@ -292,15 +319,10 @@ export class SubmissionsService {
       const fileRefs: FileReference[] = [];
       for (const file of files) {
         const key = `submissions/${submission.participationId}/${uuidv4()}-${file.originalname}`;
-        await client.send(new PutObjectCommand({
-          Bucket: bucket,
-          Key: key,
-          Body: file.buffer,
-          ContentType: file.mimetype,
-        }));
+        await this.storageService.upload(key, file.buffer, file.mimetype);
 
         const fileRef = this.fileReferenceRepository.create({
-          bucket,
+          bucket: this.storageService.getBucket(),
           key,
           originalFilename: file.originalname,
           mimeType: file.mimetype,
@@ -348,15 +370,8 @@ export class SubmissionsService {
       relations: ['fileReference'],
     });
 
-    const client = this.storageService.getClient();
-    const bucket = this.storageService.getBucket();
-
     for (const sf of existingFiles) {
-      try {
-        await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: sf.fileReference.key }));
-      } catch {
-        // ignore
-      }
+      await this.storageService.delete(sf.fileReference.key);
     }
 
     await this.submissionFileRepository.delete({ submissionId: id });
@@ -366,6 +381,61 @@ export class SubmissionsService {
       });
     }
     await this.submissionRepository.remove(submission);
+  }
+
+  async getFileStream(
+    fileId: string,
+    user: { id: string; roles?: Array<{ role: string }>; isStudent?: boolean },
+  ): Promise<{ stream: Readable; contentType: string; contentLength: number; originalFilename: string }> {
+    const fileRef = await this.fileReferenceRepository.findOne({
+      where: { id: fileId },
+    });
+    if (!fileRef) {
+      throw new NotFoundException(`File with id "${fileId}" not found`);
+    }
+
+    const submissionFile = await this.submissionFileRepository.findOne({
+      where: { fileReferenceId: fileId },
+      relations: ['submission', 'submission.participation', 'submission.participation.enrollment'],
+    });
+    if (!submissionFile) {
+      throw new NotFoundException(`File reference not linked to any submission`);
+    }
+
+    const submission = submissionFile.submission;
+    const participation = submission.participation;
+    const userRoles = (user.roles ?? []).map(r => r.role);
+    if (user.isStudent) userRoles.push('student');
+    const isAdmin = userRoles.includes('admin');
+    const isSubmitter = submission.submittedBy === user.id;
+    const isTeamLeader = userRoles.includes('team_leader');
+    const isMentor = userRoles.includes('mentor');
+
+    if (!isAdmin && !isSubmitter) {
+      if (isTeamLeader) {
+        const groups = await this.iamService.findTeamLeaderGroups(user.id);
+        const groupIds = groups.map(g => g.id);
+        if (!participation?.enrollment?.groupId || !groupIds.includes(participation.enrollment.groupId)) {
+          throw new ForbiddenException('You do not have access to this file');
+        }
+      } else if (isMentor) {
+        const sections = await this.iamService.findMentorSections(user.id);
+        const sectionIds = sections.map(s => s.id);
+        if (!participation?.enrollment?.sectionId || !sectionIds.includes(participation.enrollment.sectionId)) {
+          throw new ForbiddenException('You do not have access to this file');
+        }
+      } else {
+        throw new ForbiddenException('You do not have access to this file');
+      }
+    }
+
+    const result = await this.storageService.download(fileRef.key);
+    return {
+      stream: result.body,
+      contentType: result.contentType,
+      contentLength: result.contentLength,
+      originalFilename: fileRef.originalFilename,
+    };
   }
 
   private validateFiles(files: UploadFile[]): void {

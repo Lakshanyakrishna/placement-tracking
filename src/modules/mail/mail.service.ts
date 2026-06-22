@@ -15,13 +15,15 @@ export class MailService {
     this.transporter = nodemailer.createTransport({
       host: mailConfig.host,
       port: mailConfig.port,
-      secure: false,
-      ignoreTLS: true,
+      secure: mailConfig.secure,
       auth:
         mailConfig.username && mailConfig.password
           ? { user: mailConfig.username, pass: mailConfig.password }
           : undefined,
       connectionTimeout: 5000,
+      tls: {
+        rejectUnauthorized: mailConfig.rejectUnauthorized,
+      },
     });
 
     this.fromAddress = mailConfig.from;

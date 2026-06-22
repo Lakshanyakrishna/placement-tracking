@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Group } from './entities/group.entity';
@@ -24,7 +24,8 @@ export class GroupsService {
     const qb = this.repository.createQueryBuilder('group')
       .leftJoinAndSelect('group.section', 'section')
       .leftJoinAndSelect('section.branch', 'branch')
-      .leftJoinAndSelect('group.teamLeader', 'teamLeader');
+      .leftJoinAndSelect('group.teamLeader', 'teamLeader')
+      .andWhere('group.deleted_at IS NULL');
 
     if (search) {
       qb.where('group.name ILIKE :search', { search: `%${search}%` });
@@ -74,7 +75,15 @@ export class GroupsService {
     if (!entity) {
       throw new NotFoundException(`Group with id "${id}" not found`);
     }
-    await this.repository.remove(entity);
+    const enrollmentCount = await this.enrollmentRepository.count({
+      where: { groupId: id },
+    });
+    if (enrollmentCount > 0) {
+      throw new ConflictException(
+        `Cannot delete group: ${enrollmentCount} enrollment(s) are still assigned. Remove enrollments first.`,
+      );
+    }
+    await this.repository.softRemove(entity);
   }
 
   async findStudentsByGroup(groupId: string) {

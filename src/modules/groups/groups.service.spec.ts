@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { GroupsService } from './groups.service';
 import { Group } from './entities/group.entity';
@@ -12,6 +12,8 @@ function createMockRepository() {
     create: jest.fn(),
     save: jest.fn(),
     remove: jest.fn(),
+    softRemove: jest.fn(),
+    count: jest.fn(),
     createQueryBuilder: jest.fn(),
   };
 }
@@ -83,6 +85,7 @@ describe('GroupsService', () => {
     it('should return paginated groups', async () => {
       const qb = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
@@ -102,6 +105,7 @@ describe('GroupsService', () => {
     it('should apply search filter on name', async () => {
       const qb = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
@@ -118,6 +122,7 @@ describe('GroupsService', () => {
     it('should return empty data when no groups exist', async () => {
       const qb = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
@@ -185,13 +190,23 @@ describe('GroupsService', () => {
   });
 
   describe('remove', () => {
-    it('should remove a group', async () => {
+    it('should soft-delete a group when no enrollments assigned', async () => {
       groupRepo.findOne.mockResolvedValue(mockGroup);
-      groupRepo.remove.mockResolvedValue(mockGroup);
+      enrollmentRepo.count.mockResolvedValue(0);
+      groupRepo.softRemove.mockResolvedValue(mockGroup);
 
       await service.remove('group-1');
 
-      expect(groupRepo.remove).toHaveBeenCalledWith(mockGroup);
+      expect(groupRepo.softRemove).toHaveBeenCalledWith(mockGroup);
+    });
+
+    it('should throw ConflictException when group has enrolled students', async () => {
+      groupRepo.findOne.mockResolvedValue(mockGroup);
+      enrollmentRepo.count.mockResolvedValue(5);
+
+      await expect(service.remove('group-1')).rejects.toThrow(ConflictException);
+
+      expect(groupRepo.softRemove).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when removing nonexistent group', async () => {

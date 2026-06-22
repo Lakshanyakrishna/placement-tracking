@@ -33,10 +33,10 @@ export default function ProfilePage() {
       if (enrollment?.sectionId) {
         try {
           const section = await sectionsApi.getSection(enrollment.sectionId)
-          sectionName = section.name ?? section.code ?? ''
+          sectionName = section.code ?? ''
           mentor = section.mentorName ?? ''
         } catch {
-          sectionName = '—'
+          sectionName = ''
         }
       }
 
@@ -46,7 +46,7 @@ export default function ProfilePage() {
           groupName = group.name ?? ''
           teamLeader = group.teamLeaderName ?? ''
         } catch {
-          groupName = '—'
+          groupName = ''
         }
       }
 
@@ -69,33 +69,33 @@ export default function ProfilePage() {
   const rows = [
     { icon: User, label: 'Name', value: profile.name },
     { icon: Mail, label: 'Email', value: profile.email },
-    { icon: Hash, label: 'Roll Number', value: profile.rollNumber || '\u2014' },
-    { icon: BookOpen, label: 'Section', value: profile.section || '\u2014' },
-    { icon: Users, label: 'Group', value: profile.group || '\u2014' },
-    { icon: GraduationCap, label: 'Mentor', value: profile.mentor || '\u2014' },
-    { icon: Shield, label: 'Team Leader', value: profile.teamLeader || '\u2014' },
+    { icon: Hash, label: 'Roll Number', value: profile.rollNumber },
+    { icon: BookOpen, label: 'Section', value: profile.section },
+    { icon: Users, label: 'Group', value: profile.group },
+    { icon: GraduationCap, label: 'Mentor', value: profile.mentor || 'Not Assigned' },
+    { icon: Shield, label: 'Team Leader', value: profile.teamLeader || 'Not Assigned' },
   ]
 
   return (
     <div className="space-y-5 max-w-2xl">
       <div>
-        <h1 className="text-xl font-bold">My Profile</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Your account and enrollment details.</p>
+        <h1 className="text-xl font-semibold text-[#111827]">Profile</h1>
+        <p className="mt-1 text-sm text-[#6B7280]">Your account and enrollment details.</p>
       </div>
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">Student Information</CardTitle>
+          <CardTitle className="text-sm font-semibold text-[#111827]">Student Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-0">
           {rows.map((row) => (
             <div
               key={row.label}
-              className="flex items-center gap-3 border-b py-3 last:border-0"
+              className="flex items-center gap-3 border-b border-[#F3F4F6] py-3 last:border-0"
             >
-              <row.icon className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="text-sm text-muted-foreground w-28 shrink-0">{row.label}</span>
-              <span className="text-sm font-medium">{row.value}</span>
+              <row.icon className="h-4 w-4 text-[#9CA3AF] shrink-0" />
+              <span className="text-sm text-[#6B7280] w-28 shrink-0">{row.label}</span>
+              <span className="text-sm font-medium text-[#111827]">{row.value}</span>
             </div>
           ))}
         </CardContent>

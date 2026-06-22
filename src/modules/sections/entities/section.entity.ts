@@ -1,11 +1,11 @@
-import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, Index, DeleteDateColumn } from 'typeorm';
 import { BaseEntity } from '../../../common/base/base.entity';
 import { Branch } from '../../branches/entities/branch.entity';
 import { AcademicPeriod } from '../../academic-periods/entities/academic-period.entity';
 import { User } from '../../users/entities/user.entity';
 
 @Entity('sections')
-@Index('uq_sections_period_branch_code', ['academicPeriodId', 'branchId', 'code'], { unique: true })
+@Index('uq_sections_period_branch_code', ['academicPeriodId', 'branchId', 'code'], { unique: true, where: 'deleted_at IS NULL' })
 export class Section extends BaseEntity {
   @Column({ name: 'branch_id' })
   branchId: string;
@@ -30,4 +30,7 @@ export class Section extends BaseEntity {
   @ManyToOne(() => User)
   @JoinColumn({ name: 'mentor_user_id' })
   mentor: User;
+
+  @DeleteDateColumn({ name: 'deleted_at' })
+  deletedAt: Date | null;
 }

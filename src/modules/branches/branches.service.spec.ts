@@ -1,8 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BranchesService } from './branches.service';
 import { Branch } from './entities/branch.entity';
+import { Section } from '../sections/entities/section.entity';
 import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
 const mockBranch: Branch = {
@@ -11,24 +12,30 @@ const mockBranch: Branch = {
   name: 'Computer Science & Engineering',
   createdAt: new Date('2025-01-01'),
   updatedAt: new Date('2025-01-01'),
+  deletedAt: null,
 };
 
-function createMockRepository() {
+function createMockRepository(extra: Record<string, any> = {}) {
   return {
     findAndCount: jest.fn(),
     findOneBy: jest.fn(),
     create: jest.fn(),
     save: jest.fn(),
     remove: jest.fn(),
+    count: jest.fn(),
+    softRemove: jest.fn(),
+    ...extra,
   };
 }
 
 describe('BranchesService', () => {
   let service: BranchesService;
   let repository: ReturnType<typeof createMockRepository>;
+  let sectionRepo: ReturnType<typeof createMockRepository>;
 
   beforeEach(async () => {
     repository = createMockRepository();
+    sectionRepo = createMockRepository();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -36,6 +43,10 @@ describe('BranchesService', () => {
         {
           provide: getRepositoryToken(Branch),
           useValue: repository,
+        },
+        {
+          provide: getRepositoryToken(Section),
+          useValue: sectionRepo,
         },
       ],
     }).compile();
@@ -165,14 +176,25 @@ describe('BranchesService', () => {
   });
 
   describe('remove', () => {
-    it('should delete a branch', async () => {
+    it('should soft-delete a branch when no sections assigned', async () => {
       repository.findOneBy.mockResolvedValue(mockBranch);
-      repository.remove.mockResolvedValue(mockBranch);
+      sectionRepo.count.mockResolvedValue(0);
+      repository.softRemove.mockResolvedValue(mockBranch);
 
       await service.remove(mockBranch.id);
 
       expect(repository.findOneBy).toHaveBeenCalledWith({ id: mockBranch.id });
-      expect(repository.remove).toHaveBeenCalledWith(mockBranch);
+      expect(sectionRepo.count).toHaveBeenCalledWith({ where: { branchId: mockBranch.id } });
+      expect(repository.softRemove).toHaveBeenCalledWith(mockBranch);
+    });
+
+    it('should throw ConflictException when branch has assigned sections', async () => {
+      repository.findOneBy.mockResolvedValue(mockBranch);
+      sectionRepo.count.mockResolvedValue(3);
+
+      await expect(service.remove(mockBranch.id)).rejects.toThrow(ConflictException);
+
+      expect(repository.softRemove).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when branch not found', async () => {

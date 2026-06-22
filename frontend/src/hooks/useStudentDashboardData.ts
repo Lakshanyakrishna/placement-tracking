@@ -12,6 +12,8 @@ export interface StudentDashboardData {
     inProgress: number
     completed: number
     pendingVerification: number
+    rejected: number
+    available: number
   }
 }
 
@@ -23,9 +25,10 @@ export function useStudentDashboardData() {
     queryFn: async () => {
       const dashRes = await dashboardApi.getStudentDashboard()
 
+      const enrollment = (user as any)?.enrollment
       return {
-        name: user?.name ?? 'Student',
-        rollNumber: '',
+        name: user?.name ?? '',
+        rollNumber: enrollment?.rollNumber ?? '',
         sectionName: '',
         groupName: '',
         summary: {
@@ -33,6 +36,8 @@ export function useStudentDashboardData() {
           inProgress: dashRes.inProgress,
           completed: dashRes.completed + dashRes.verified,
           pendingVerification: dashRes.submitted,
+          rejected: dashRes.rejected,
+          available: dashRes.availableOpportunities,
         },
       }
     },

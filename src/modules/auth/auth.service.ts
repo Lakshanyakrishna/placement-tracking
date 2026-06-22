@@ -243,6 +243,8 @@ export class AuthService {
     sectionId: string;
     groupId?: string;
     batchId: string;
+    rollNumber: string | null;
+    isActive: boolean;
   } | null> {
     const now = new Date();
     const enrollment = await this.enrollmentRepository.findOne({
@@ -271,6 +273,8 @@ export class AuthService {
       sectionId: enrollment.sectionId,
       groupId: enrollment.groupId ?? undefined,
       batchId: enrollment.batchId,
+      rollNumber: enrollment.rollNumber,
+      isActive: enrollment.isActive,
     };
   }
 
@@ -284,6 +288,8 @@ export class AuthService {
       sectionId: string;
       groupId?: string;
       batchId: string;
+      rollNumber: string | null;
+      isActive: boolean;
     } | null,
   ): TokenPayload {
     return {

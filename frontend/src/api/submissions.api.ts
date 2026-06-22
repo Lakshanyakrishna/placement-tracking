@@ -13,10 +13,11 @@ export async function createSubmission(
   onProgress?: (percent: number) => void,
 ): Promise<Submission> {
   const formData = new FormData()
+  formData.append('participationId', participationId)
   files.forEach((file) => formData.append('files', file))
   if (description) formData.append('description', description)
 
-  const response = await client.post<Submission>(`/submissions/${participationId}`, formData, {
+  const response = await client.post<Submission>('/submissions', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     onUploadProgress: (e) => {
       if (onProgress && e.total) {
@@ -36,7 +37,9 @@ export async function getMySubmissions(): Promise<Submission[]> {
   return response.data.data
 }
 
-export async function getDownloadUrl(fileId: string): Promise<string> {
-  const response = await client.get<{ url: string }>(`/submissions/files/${fileId}/download`)
-  return response.data.url
+export async function downloadFile(fileId: string): Promise<Blob> {
+  const response = await client.get<Blob>(`/submissions/files/${fileId}/download`, {
+    responseType: 'blob',
+  })
+  return response.data
 }

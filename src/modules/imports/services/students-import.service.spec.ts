@@ -135,6 +135,19 @@ describe('StudentsImportService', () => {
       expect(result.valid).toBe(false);
       expect(result.errors).toHaveLength(1);
     });
+    it('should fail validation when group_name is missing', async () => {
+      excelParser.parse.mockResolvedValue({
+        rows: [{ rowNumber: 2, email: 'student@test.com', name: 'Test Student' }],
+        errors: [{ row: 2, column: 'group_name', message: 'Group Name is required', value: '' }],
+      });
+      const result = await service.validate(mockFile);
+      expect(result.valid).toBe(false);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].row).toBe(2);
+      expect(result.errors[0].column).toBe('group_name');
+      expect(result.errors[0].message).toContain('required');
+    });
+
     it('should flag already enrolled students', async () => {
       const enrolledRow = { ...mockRow, email: 'existing@test.com' };
       const enrolledCache = {
@@ -200,6 +213,7 @@ describe('StudentsImportService', () => {
         expect.objectContaining({
           email: 'student@test.com',
           passwordHash: 'hashed-default-password',
+          mustChangePassword: true,
         }),
       );
     });
@@ -221,6 +235,23 @@ describe('StudentsImportService', () => {
         'No active academic period found',
       );
     });
+    it('should fail import when group_name is missing (parse error)', async () => {
+      const manager = createMockManager();
+      dataSource.transaction.mockImplementation(<T>(cb: (mgr: typeof manager) => Promise<T>) =>
+        cb(manager),
+      );
+      manager.create.mockImplementation((entity: any, data: any) => data);
+      manager.save.mockResolvedValue({});
+      excelParser.parse.mockResolvedValue({
+        rows: [{ rowNumber: 2, email: 'student@test.com', name: 'Test Student' }],
+        errors: [{ row: 2, column: 'group_name', message: 'Group Name is required', value: '' }],
+      });
+      const result = await service.import(mockFile, 'admin-1');
+      expect(result.status).toBe('failed');
+      expect(result.successCount).toBe(0);
+      expect(result.errors.some((e) => e.column === 'group_name')).toBe(true);
+    });
+
     it('should return partial status when some rows fail', async () => {
       const manager = createMockManager();
       dataSource.transaction.mockImplementation(<T>(cb: (mgr: typeof manager) => Promise<T>) =>

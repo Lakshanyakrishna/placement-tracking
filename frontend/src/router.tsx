@@ -1,7 +1,7 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter } from 'react-router-dom'
 import { AppShell } from '@/components/layout/AppShell'
 import { RoleGuard } from '@/components/layout/RoleGuard'
-import { ROLES, ROUTES } from '@/lib/constants'
+import { ROLES } from '@/lib/constants'
 
 import LandingPage from '@/pages/LandingPage'
 import LoginPage from '@/pages/LoginPage'

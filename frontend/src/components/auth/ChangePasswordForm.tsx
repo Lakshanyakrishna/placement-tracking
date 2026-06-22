@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { GraduationCap, ShieldAlert } from 'lucide-react'
 import * as authApi from '@/api/auth.api'
 
@@ -51,14 +51,14 @@ export function ChangePasswordForm({ email, onComplete }: ChangePasswordFormProp
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-stmarys to-stmarys-dark px-4">
-      <Card className="w-full max-w-sm shadow-xl">
+    <div className="flex min-h-screen items-center justify-center bg-[#FAFAFA] px-4">
+      <Card className="w-full max-w-sm border shadow-sm">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-stmarys-light">
-            <GraduationCap className="h-6 w-6 text-stmarys" />
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[#FEF2F2]">
+            <GraduationCap className="h-6 w-6 text-[#B91C1C]" />
           </div>
-          <CardTitle className="text-lg">Change Password</CardTitle>
-          <CardDescription>St. Mary's Career Hub</CardDescription>
+          <CardTitle className="text-lg text-[#111827]">Change Password</CardTitle>
+          <p className="mt-1 text-sm text-[#6B7280]">St. Mary&apos;s Career Hub</p>
         </CardHeader>
         <CardContent>
           <div className="mb-4 flex items-start gap-2 rounded-md bg-amber-50 p-3 text-xs text-amber-800">
@@ -75,31 +75,31 @@ export function ChangePasswordForm({ email, onComplete }: ChangePasswordFormProp
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-sm text-[#111827]">Email</Label>
                 <Input id="email" type="email" value={email} disabled />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="currentPassword">Current Password</Label>
+                <Label htmlFor="currentPassword" className="text-sm text-[#111827]">Current Password</Label>
                 <Input id="currentPassword" type="password" {...register('currentPassword')} />
                 {errors.currentPassword && (
-                  <p className="text-xs text-destructive">{errors.currentPassword.message}</p>
+                  <p className="text-xs text-red-600">{errors.currentPassword.message}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="newPassword">New Password</Label>
+                <Label htmlFor="newPassword" className="text-sm text-[#111827]">New Password</Label>
                 <Input id="newPassword" type="password" {...register('newPassword')} />
                 {errors.newPassword && (
-                  <p className="text-xs text-destructive">{errors.newPassword.message}</p>
+                  <p className="text-xs text-red-600">{errors.newPassword.message}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Label htmlFor="confirmPassword" className="text-sm text-[#111827]">Confirm New Password</Label>
                 <Input id="confirmPassword" type="password" {...register('confirmPassword')} />
                 {errors.confirmPassword && (
-                  <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>
+                  <p className="text-xs text-red-600">{errors.confirmPassword.message}</p>
                 )}
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              {error && <p className="text-sm text-red-600">{error}</p>}
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? 'Changing...' : 'Change Password'}
               </Button>

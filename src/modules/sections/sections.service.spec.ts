@@ -19,6 +19,8 @@ function createMockRepository() {
     create: jest.fn(),
     save: jest.fn(),
     remove: jest.fn(),
+    count: jest.fn(),
+    softRemove: jest.fn(),
   };
 }
 
@@ -228,15 +230,35 @@ describe('SectionsService', () => {
   });
 
   describe('remove', () => {
-    it('should delete an existing section', async () => {
+    it('should soft-delete a section when no groups or enrollments assigned', async () => {
       const section = { id: '1' } as Section;
       sectionRepo.findOneBy.mockResolvedValue(section);
-      sectionRepo.remove.mockResolvedValue(section);
+      groupRepo.count.mockResolvedValue(0);
+      enrollmentRepo.count.mockResolvedValue(0);
+      sectionRepo.softRemove.mockResolvedValue(section);
 
       await service.remove('1');
 
       expect(sectionRepo.findOneBy).toHaveBeenCalledWith({ id: '1' });
-      expect(sectionRepo.remove).toHaveBeenCalledWith(section);
+      expect(sectionRepo.softRemove).toHaveBeenCalledWith(section);
+    });
+
+    it('should throw ConflictException when section has groups assigned', async () => {
+      const section = { id: '1' } as Section;
+      sectionRepo.findOneBy.mockResolvedValue(section);
+      groupRepo.count.mockResolvedValue(2);
+      enrollmentRepo.count.mockResolvedValue(0);
+
+      await expect(service.remove('1')).rejects.toThrow(ConflictException);
+    });
+
+    it('should throw ConflictException when section has enrollments assigned', async () => {
+      const section = { id: '1' } as Section;
+      sectionRepo.findOneBy.mockResolvedValue(section);
+      groupRepo.count.mockResolvedValue(0);
+      enrollmentRepo.count.mockResolvedValue(5);
+
+      await expect(service.remove('1')).rejects.toThrow(ConflictException);
     });
 
     it('should throw NotFoundException when section to remove is not found', async () => {

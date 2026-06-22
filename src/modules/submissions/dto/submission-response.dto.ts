@@ -14,7 +14,7 @@ export class SubmissionFileDto {
 
   static fromEntity(fileRef: FileReference): SubmissionFileDto {
     return {
-      id: (fileRef as any).submissionFileId ?? '',
+      id: '',
       fileReferenceId: fileRef.id,
       bucket: fileRef.bucket,
       key: fileRef.key,

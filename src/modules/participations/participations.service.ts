@@ -10,6 +10,7 @@ import { CreateParticipationDto } from './dto/create-participation.dto';
 import { UpdateParticipationStatusDto } from './dto/update-participation-status.dto';
 import { ParticipationResponseDto } from './dto/participation-response.dto';
 import { ParticipationFilterDto } from './dto/participation-filter.dto';
+import { IamService } from '../iam/iam.service';
 
 const STATUS_TRANSITIONS: Record<ParticipationStatus, ParticipationStatus[]> = {
   [ParticipationStatus.NOT_STARTED]: [ParticipationStatus.IN_PROGRESS],
@@ -32,6 +33,7 @@ export class ParticipationsService {
     private readonly opportunityRepository: Repository<Opportunity>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
+    private readonly iamService: IamService,
   ) {}
 
   async create(dto: CreateParticipationDto, userId: string): Promise<ParticipationResponseDto> {
@@ -121,7 +123,7 @@ export class ParticipationsService {
     };
   }
 
-  async findOne(id: string): Promise<ParticipationResponseDto> {
+  async findOne(id: string, user: { id: string; roles?: Array<{ role: string }>; isStudent?: boolean }): Promise<ParticipationResponseDto> {
     const entity = await this.repository.findOne({
       where: { id },
       relations: ['opportunity', 'enrollment', 'enrollment.user'],
@@ -129,6 +131,17 @@ export class ParticipationsService {
     if (!entity) {
       throw new NotFoundException(`Participation with id "${id}" not found`);
     }
+
+    const userRoles = (user.roles ?? []).map(r => r.role);
+    if (user.isStudent) userRoles.push('student');
+    const isAdmin = userRoles.includes('admin');
+    const isOwner = entity.enrollment?.userId === user.id;
+    const isTeamLeader = entity.teamLeaderUserId === user.id;
+
+    if (!isAdmin && !isOwner && !isTeamLeader) {
+      throw new ForbiddenException('You do not have access to this participation');
+    }
+
     return ParticipationResponseDto.fromEntity(entity);
   }
 
@@ -143,6 +156,12 @@ export class ParticipationsService {
     });
     if (!entity) {
       throw new NotFoundException(`Participation with id "${id}" not found`);
+    }
+
+    const isOwner = entity.enrollment?.userId === currentUserId;
+    const isTeamLeader = entity.teamLeaderUserId === currentUserId;
+    if (!isOwner && !isTeamLeader) {
+      throw new ForbiddenException('You can only update your own participation or one you are assigned to as team leader');
     }
 
     const allowed = STATUS_TRANSITIONS[entity.status];
@@ -200,7 +219,20 @@ export class ParticipationsService {
   async findByGroup(
     groupId: string,
     query: PaginationQueryDto,
+    user: { id: string; roles?: Array<{ role: string }>; isStudent?: boolean },
   ): Promise<{ data: ParticipationResponseDto[]; meta: PaginationMetaDto }> {
+    const userRoles = (user.roles ?? []).map(r => r.role);
+    if (user.isStudent) userRoles.push('student');
+    const isAdmin = userRoles.includes('admin');
+    const isTeamLeader = userRoles.includes('team_leader');
+
+    if (isTeamLeader && !isAdmin) {
+      const groups = await this.iamService.findTeamLeaderGroups(user.id);
+      if (!groups.some(g => g.id === groupId)) {
+        throw new ForbiddenException('You can only view participations for your own groups');
+      }
+    }
+
     const { field, direction } = parseSort(query.sort);
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
@@ -230,7 +262,20 @@ export class ParticipationsService {
   async findBySection(
     sectionId: string,
     query: PaginationQueryDto,
+    user: { id: string; roles?: Array<{ role: string }>; isStudent?: boolean },
   ): Promise<{ data: ParticipationResponseDto[]; meta: PaginationMetaDto }> {
+    const userRoles = (user.roles ?? []).map(r => r.role);
+    if (user.isStudent) userRoles.push('student');
+    const isAdmin = userRoles.includes('admin');
+    const isMentor = userRoles.includes('mentor');
+
+    if (isMentor && !isAdmin) {
+      const sections = await this.iamService.findMentorSections(user.id);
+      if (!sections.some(s => s.id === sectionId)) {
+        throw new ForbiddenException('You can only view participations for your own sections');
+      }
+    }
+
     const { field, direction } = parseSort(query.sort);
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
@@ -260,13 +305,22 @@ export class ParticipationsService {
   async findByMentor(
     mentorId: string,
     query: PaginationQueryDto,
+    user: { id: string; roles?: Array<{ role: string }>; isStudent?: boolean },
   ): Promise<{ data: ParticipationResponseDto[]; meta: PaginationMetaDto }> {
+    const userRoles = (user.roles ?? []).map(r => r.role);
+    if (user.isStudent) userRoles.push('student');
+    const isAdmin = userRoles.includes('admin');
+
+    if (!isAdmin && mentorId !== user.id) {
+      throw new ForbiddenException('You can only view participations for your own mentor profile');
+    }
+
     const { field, direction } = parseSort(query.sort);
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
 
     const sections = await this.enrollmentRepository.manager.query(
-      `SELECT id FROM sections WHERE mentor_user_id = $1`,
+      `SELECT id FROM sections WHERE mentor_user_id = $1 AND deleted_at IS NULL`,
       [mentorId],
     );
     if (sections.length === 0) {

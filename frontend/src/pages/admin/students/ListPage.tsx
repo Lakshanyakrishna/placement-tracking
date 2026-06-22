@@ -18,24 +18,14 @@ export default function StudentsListPage() {
 
   if (isLoading) return <LoadingSpinner fullPage />
 
-  const grouped = students
-    ? students.reduce(
-        (acc, s) => {
-          const g = (s as any).groupName ?? '—'
-          if (!acc[g]) acc[g] = []
-          acc[g].push(s)
-          return acc
-        },
-        {} as Record<string, typeof students>,
-      )
-    : {}
+  const sectionName = sections?.[0]?.code ?? 'Section'
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Students</h1>
         <p className="text-sm text-muted-foreground">
-          IV-AI&DS-A — {students?.length ?? 0} students enrolled
+          {sectionName} — {students?.length ?? 0} students enrolled
         </p>
       </div>
 

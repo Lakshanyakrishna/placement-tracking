@@ -1,4 +1,4 @@
-import { Entity, Column, ManyToOne, JoinColumn, Check } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, Check, DeleteDateColumn } from 'typeorm';
 import { BaseEntity } from '../../../common/base/base.entity';
 import { AcademicPeriod } from '../../academic-periods/entities/academic-period.entity';
 import { User } from '../../users/entities/user.entity';
@@ -60,13 +60,13 @@ export class Opportunity extends BaseEntity {
   @Column({ name: 'allow_group_submission', default: false })
   allowGroupSubmission: boolean;
 
-  @Column({ name: 'target_branch_id', type: 'varchar', nullable: true })
+  @Column({ name: 'target_branch_id', type: 'uuid', nullable: true })
   targetBranchId: string | null;
 
-  @Column({ name: 'target_section_id', type: 'varchar', nullable: true })
+  @Column({ name: 'target_section_id', type: 'uuid', nullable: true })
   targetSectionId: string | null;
 
-  @Column({ name: 'target_batch_id', type: 'varchar', nullable: true })
+  @Column({ name: 'target_batch_id', type: 'uuid', nullable: true })
   targetBatchId: string | null;
 
   @ManyToOne(() => AcademicPeriod)
@@ -76,4 +76,7 @@ export class Opportunity extends BaseEntity {
   @ManyToOne(() => User)
   @JoinColumn({ name: 'created_by' })
   createdByUser: User;
+
+  @DeleteDateColumn({ name: 'deleted_at' })
+  deletedAt: Date | null;
 }

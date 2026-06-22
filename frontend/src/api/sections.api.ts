@@ -3,10 +3,10 @@ import client from './client'
 export interface SectionDto {
   id: string
   code: string
-  name?: string
-  isActive: boolean
   mentorUserId: string | null
   mentorName?: string
+  branchName?: string
+  academicPeriodName?: string
   createdAt: string
   updatedAt: string
 }

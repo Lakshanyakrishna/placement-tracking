@@ -54,6 +54,15 @@ export class OpportunitiesController {
     return this.opportunitiesService.findAll(query);
   }
 
+  @Get('available')
+  @ApiOperation({ summary: 'Get available opportunities for the authenticated student' })
+  @ApiResponse({ status: 200, description: 'Available opportunities', type: [OpportunityResponseDto] })
+  async findAvailable(
+    @CurrentUser('id') userId: string,
+  ): Promise<OpportunityResponseDto[]> {
+    return this.opportunitiesService.findAvailable(userId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get an opportunity by ID with targets' })
   @ApiResponse({ status: 200, description: 'Opportunity found', type: OpportunityResponseDto })

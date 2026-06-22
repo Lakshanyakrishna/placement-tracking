@@ -1,17 +1,24 @@
 export interface SubmissionFile {
   id: string
-  fileName: string
-  fileSize: number
+  fileReferenceId: string
+  bucket: string
+  key: string
+  originalFilename: string
   mimeType: string
-  storagePath: string
+  sizeBytes: number
   createdAt: string
 }
 
 export interface Submission {
   id: string
   participationId: string
+  submittedBy: string
   description: string | null
+  externalLinks: object | null
   submittedAt: string
+  isLate: boolean
   rejectionReason: string | null
-  files: SubmissionFile[]
+  createdAt: string
+  updatedAt: string
+  files?: SubmissionFile[]
 }

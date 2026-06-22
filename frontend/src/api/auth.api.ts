@@ -55,7 +55,7 @@ export async function logout(): Promise<void> {
 }
 
 export async function refresh(): Promise<{ accessToken: string }> {
-  const response = await client.post<{ accessToken: string }>('/auth/refresh')
+  const response = await client.post<{ accessToken: string }>('/auth/refresh', {}, { _isRefresh: true } as any)
   setAccessToken(response.data.accessToken)
   return response.data
 }

@@ -35,3 +35,8 @@ export async function archiveOpportunity(id: string): Promise<Opportunity> {
   const response = await client.post<Opportunity>(`/opportunities/${id}/archive`)
   return response.data
 }
+
+export async function getAvailableOpportunities(): Promise<Opportunity[]> {
+  const response = await client.get<Opportunity[]>('/opportunities/available')
+  return response.data
+}

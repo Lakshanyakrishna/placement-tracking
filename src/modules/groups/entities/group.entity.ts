@@ -1,4 +1,4 @@
-import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, DeleteDateColumn } from 'typeorm';
 import { BaseEntity } from '../../../common/base/base.entity';
 import { Section } from '../../sections/entities/section.entity';
 import { User } from '../../users/entities/user.entity';
@@ -21,4 +21,7 @@ export class Group extends BaseEntity {
   @ManyToOne(() => User)
   @JoinColumn({ name: 'team_leader_user_id' })
   teamLeader: User;
+
+  @DeleteDateColumn({ name: 'deleted_at' })
+  deletedAt: Date | null;
 }

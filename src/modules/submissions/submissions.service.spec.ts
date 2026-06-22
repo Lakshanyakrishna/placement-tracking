@@ -9,8 +9,10 @@ import { Participation, ParticipationStatus } from '../participations/entities/p
 import { Enrollment } from '../enrollments/entities/enrollment.entity';
 import { Opportunity, OpportunityState, OpportunityType } from '../opportunities/entities/opportunity.entity';
 import { StorageService } from '../storage/storage.service';
+import { IamService } from '../iam/iam.service';
 
 const UUID = '550e8400-e29b-41d4-a716-446655440000';
+const mockUser = { id: UUID, roles: [{ role: 'admin' }], isStudent: false };
 
 const mockFile = {
   fieldname: 'files',
@@ -71,7 +73,20 @@ describe('SubmissionsService', () => {
           useValue: {
             getClient: () => ({ send: mockSend }),
             getBucket: () => 'test-bucket',
+            upload: jest.fn().mockResolvedValue(undefined),
+            download: jest.fn().mockResolvedValue({
+              body: {} as any,
+              contentType: 'application/pdf',
+              contentLength: 100,
+              originalFilename: 'proof.pdf',
+            }),
+            delete: jest.fn().mockResolvedValue(undefined),
+            getDownloadUrl: jest.fn().mockResolvedValue('https://example.com/download'),
           },
+        },
+        {
+          provide: IamService,
+          useValue: { findTeamLeaderGroups: jest.fn().mockResolvedValue([]), findMentorSections: jest.fn().mockResolvedValue([]) },
         },
       ],
     }).compile();
@@ -106,7 +121,7 @@ describe('SubmissionsService', () => {
 
       expect(result).toBeDefined();
       expect(participationRepo.findOne).toHaveBeenCalled();
-      expect(mockSend).toHaveBeenCalled();
+      expect(fileRefRepo.save).toHaveBeenCalled();
     });
 
     it('should throw when no files', async () => {
@@ -179,7 +194,7 @@ describe('SubmissionsService', () => {
       submissionRepo.findOne.mockResolvedValue({ id: UUID, participationId: UUID, submittedBy: UUID, description: null, externalLinks: null, submittedAt: new Date(), isLate: false, rejectionReason: null, createdAt: new Date(), updatedAt: new Date() });
       submissionFileRepo.find.mockResolvedValue([]);
 
-      const result = await service.findOne(UUID);
+      const result = await service.findOne(UUID, mockUser);
 
       expect(result).toBeDefined();
       expect(result.id).toBe(UUID);
@@ -188,7 +203,7 @@ describe('SubmissionsService', () => {
     it('should throw NotFoundException', async () => {
       submissionRepo.findOneBy.mockResolvedValue(null);
 
-      await expect(service.findOne('nonexistent')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('nonexistent', mockUser)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -213,7 +228,7 @@ describe('SubmissionsService', () => {
       submissionRepo.findOne.mockResolvedValue({ id: UUID, participationId: UUID, submittedBy: UUID, description: null, externalLinks: null, submittedAt: new Date(), isLate: false, rejectionReason: null, createdAt: new Date(), updatedAt: new Date() });
       submissionFileRepo.find.mockResolvedValue([]);
 
-      const result = await service.findByGroup(UUID, {});
+      const result = await service.findByGroup(UUID, {}, mockUser);
 
       expect(result.data).toHaveLength(1);
     });
@@ -221,7 +236,7 @@ describe('SubmissionsService', () => {
     it('should return empty when no enrollments', async () => {
       enrollmentRepo.find.mockResolvedValue([]);
 
-      const result = await service.findByGroup(UUID, {});
+      const result = await service.findByGroup(UUID, {}, mockUser);
 
       expect(result.data).toHaveLength(0);
     });
@@ -235,7 +250,7 @@ describe('SubmissionsService', () => {
       submissionRepo.findOne.mockResolvedValue({ id: UUID, participationId: UUID, submittedBy: UUID, description: null, externalLinks: null, submittedAt: new Date(), isLate: false, rejectionReason: null, createdAt: new Date(), updatedAt: new Date() });
       submissionFileRepo.find.mockResolvedValue([]);
 
-      const result = await service.findBySection(UUID, {});
+      const result = await service.findBySection(UUID, {}, mockUser);
 
       expect(result.data).toHaveLength(1);
     });

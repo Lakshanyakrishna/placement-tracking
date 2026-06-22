@@ -116,6 +116,8 @@ describe('Dashboard Controller (Integration)', () => {
         submitted: 2,
         verified: 2,
         completed: 1,
+        availableOpportunities: 5,
+        rejected: 0,
       });
       const res = await request(app.getHttpServer()).get('/api/v1/dashboard/student').expect(200);
       expect(res.body.assignedOpportunities).toBe(8);

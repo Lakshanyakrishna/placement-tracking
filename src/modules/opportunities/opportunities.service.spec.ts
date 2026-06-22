@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { OpportunitiesService } from './opportunities.service';
 import { Opportunity, OpportunityState, OpportunityType } from './entities/opportunity.entity';
 import { OpportunityTarget, TargetType } from './entities/opportunity-target.entity';
@@ -31,6 +32,7 @@ function createMockRepository() {
     create: jest.fn(),
     save: jest.fn(),
     remove: jest.fn(),
+    softRemove: jest.fn(),
     delete: jest.fn(),
   };
 }
@@ -55,6 +57,7 @@ function freshMock(): Opportunity {
     targetBatchId: null,
     createdAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01'),
+    deletedAt: null,
     academicPeriod: undefined as never,
     createdByUser: undefined as never,
   };
@@ -74,6 +77,10 @@ describe('OpportunitiesService', () => {
         OpportunitiesService,
         { provide: getRepositoryToken(Opportunity), useValue: repository },
         { provide: getRepositoryToken(OpportunityTarget), useValue: targetRepository },
+        {
+          provide: DataSource,
+          useValue: { query: jest.fn().mockResolvedValue([]) },
+        },
       ],
     }).compile();
 
@@ -196,21 +203,21 @@ describe('OpportunitiesService', () => {
   });
 
   describe('remove', () => {
-    it('should delete a draft opportunity', async () => {
+    it('should soft-delete a draft opportunity', async () => {
       repository.findOneBy.mockResolvedValue(freshMock());
-      repository.remove.mockResolvedValue(freshMock());
+      repository.softRemove.mockResolvedValue(freshMock());
 
       await service.remove('opp-1');
 
       expect(repository.findOneBy).toHaveBeenCalledWith({ id: 'opp-1' });
-      expect(repository.remove).toHaveBeenCalledWith(freshMock());
+      expect(repository.softRemove).toHaveBeenCalledWith(freshMock());
     });
 
     it('should throw ConflictException when not draft', async () => {
       repository.findOneBy.mockResolvedValue({ ...freshMock(), state: OpportunityState.PUBLISHED });
 
       await expect(service.remove('opp-1')).rejects.toThrow(ConflictException);
-      expect(repository.remove).not.toHaveBeenCalled();
+      expect(repository.softRemove).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when not found', async () => {

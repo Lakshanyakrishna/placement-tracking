@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, Like, In } from 'typeorm';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Inject } from '@nestjs/common';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
+import { Repository, FindOptionsWhere, Like, In, DataSource } from 'typeorm';
 import { Opportunity, OpportunityState } from './entities/opportunity.entity';
 import { OpportunityTarget, TargetType } from './entities/opportunity-target.entity';
 import { PaginationQueryDto, PaginationMetaDto, createPaginationMeta, parseSort } from '../../common/dto/pagination.dto';
@@ -18,6 +18,7 @@ export class OpportunitiesService {
     private readonly repository: Repository<Opportunity>,
     @InjectRepository(OpportunityTarget)
     private readonly targetRepository: Repository<OpportunityTarget>,
+    @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
   async create(dto: CreateOpportunityDto, userId: string): Promise<OpportunityResponseDto> {
@@ -117,7 +118,7 @@ export class OpportunitiesService {
     if (entity.state !== OpportunityState.DRAFT) {
       throw new ConflictException('Only draft opportunities can be deleted');
     }
-    await this.repository.remove(entity);
+    await this.repository.softRemove(entity);
   }
 
   async publish(id: string): Promise<OpportunityResponseDto> {
@@ -176,6 +177,43 @@ export class OpportunitiesService {
     });
 
     return loaded.map(TargetResponseDto.fromEntity);
+  }
+
+  async findAvailable(userId: string): Promise<OpportunityResponseDto[]> {
+    const ids = await this.dataSource.query<{ id: string }[]>(
+      `SELECT o.id FROM opportunities o
+       WHERE o.deleted_at IS NULL
+         AND o.state IN ('published','open')
+         AND (o.opens_at IS NULL OR o.opens_at <= NOW())
+         AND (o.closes_at IS NULL OR o.closes_at >= NOW())
+         AND o.id NOT IN (
+           SELECT p.opportunity_id FROM participations p
+           WHERE p.enrollment_id IN (SELECT id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL)
+         )
+         AND (
+           o.target_branch_id IS NULL
+           OR o.target_branch_id IN (SELECT branch_id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL)
+         )
+         AND (
+           o.target_section_id IS NULL
+           OR o.target_section_id IN (SELECT section_id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL)
+         )
+         AND (
+           o.target_batch_id IS NULL
+           OR o.target_batch_id IN (SELECT batch_id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL)
+         )
+       ORDER BY o.created_at DESC`,
+      [userId],
+    );
+
+    if (ids.length === 0) return [];
+
+    const entities = await this.repository.find({
+      where: { id: In(ids.map(r => r.id)) },
+      relations: ['academicPeriod', 'createdByUser'],
+    });
+
+    return entities.map((e) => OpportunityResponseDto.fromEntity(e));
   }
 
   async getTargets(id: string): Promise<TargetResponseDto[]> {

@@ -10,6 +10,7 @@ import { Enrollment } from '../enrollments/entities/enrollment.entity';
 import { IamService } from '../iam/iam.service';
 
 const UUID = '550e8400-e29b-41d4-a716-446655440000';
+const mockUser = { id: UUID, roles: [{ role: 'admin' }], isStudent: false };
 
 function createRepoMock() {
   return {
@@ -38,7 +39,7 @@ describe('VerificationService', () => {
     submissionFileRepo = createRepoMock();
     participationRepo = createRepoMock();
     enrollmentRepo = createRepoMock();
-    iamService = { findTeamLeaderGroups: jest.fn() } as any;
+    iamService = { findTeamLeaderGroups: jest.fn(), findMentorSections: jest.fn() } as any;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -111,7 +112,7 @@ describe('VerificationService', () => {
         actor: { name: 'TL' }, submission: { participation: { status: 'verified' } },
       }], 1]);
 
-      const result = await service.findByGroup(UUID, {});
+      const result = await service.findByGroup(UUID, {}, mockUser);
 
       expect(result.data).toHaveLength(1);
       expect(result.meta.total).toBe(1);
@@ -120,7 +121,7 @@ describe('VerificationService', () => {
     it('should return empty when no enrollments', async () => {
       enrollmentRepo.find.mockResolvedValue([]);
 
-      const result = await service.findByGroup(UUID, {});
+      const result = await service.findByGroup(UUID, {}, mockUser);
 
       expect(result.data).toHaveLength(0);
     });
@@ -136,7 +137,7 @@ describe('VerificationService', () => {
         actor: { name: 'TL' }, submission: { participation: { status: 'rejected' } },
       }], 1]);
 
-      const result = await service.findBySection(UUID, {});
+      const result = await service.findBySection(UUID, {}, mockUser);
 
       expect(result.data).toHaveLength(1);
     });
@@ -144,21 +145,21 @@ describe('VerificationService', () => {
 
   describe('findBySubmission', () => {
     it('should return logs for a submission', async () => {
-      submissionRepo.findOneBy.mockResolvedValue({ id: UUID } as any);
+      submissionRepo.findOne.mockResolvedValue({ id: UUID, participationId: UUID, participation: { enrollment: { groupId: UUID, sectionId: UUID } } } as any);
       logRepo.find.mockResolvedValue([{
         id: UUID, submissionId: UUID, action: VerificationAction.VERIFIED, actorUserId: UUID, reason: null, createdAt: new Date(),
         actor: { name: 'TL' }, submission: { participation: { status: 'verified' } },
       }]);
 
-      const result = await service.findBySubmission(UUID);
+      const result = await service.findBySubmission(UUID, mockUser);
 
       expect(result.data).toHaveLength(1);
     });
 
     it('should throw NotFoundException when submission missing', async () => {
-      submissionRepo.findOneBy.mockResolvedValue(null);
+      submissionRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.findBySubmission('nonexistent')).rejects.toThrow(NotFoundException);
+      await expect(service.findBySubmission('nonexistent', mockUser)).rejects.toThrow(NotFoundException);
     });
   });
 

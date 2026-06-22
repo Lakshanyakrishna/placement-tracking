@@ -1,4 +1,4 @@
-import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, Index, DeleteDateColumn } from 'typeorm';
 import { BaseEntity } from '../../../common/base/base.entity';
 import { User } from '../../users/entities/user.entity';
 import { AcademicPeriod } from '../../academic-periods/entities/academic-period.entity';
@@ -8,7 +8,7 @@ import { Group } from '../../groups/entities/group.entity';
 import { Batch } from '../../batches/entities/batch.entity';
 
 @Entity('enrollments')
-@Index('uq_enrollments_user_period', ['userId', 'academicPeriodId'], { unique: true })
+@Index('uq_enrollments_user_period', ['userId', 'academicPeriodId'], { unique: true, where: 'deleted_at IS NULL' })
 export class Enrollment extends BaseEntity {
   @Column({ name: 'user_id' })
   userId: string;
@@ -60,4 +60,7 @@ export class Enrollment extends BaseEntity {
   @ManyToOne(() => Batch)
   @JoinColumn({ name: 'batch_id' })
   batch: Batch;
+
+  @DeleteDateColumn({ name: 'deleted_at' })
+  deletedAt: Date | null;
 }

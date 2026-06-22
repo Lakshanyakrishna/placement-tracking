@@ -3,12 +3,14 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   HttpCode,
   HttpStatus,
   Param,
   Patch,
   Post,
   Query,
+  Res,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -26,6 +28,8 @@ import { UpdateSubmissionDto } from './dto/update-submission.dto';
 import { SubmissionResponseDto } from './dto/submission-response.dto';
 import { PaginationQueryDto, PaginationMetaDto } from '../../common/dto/pagination.dto';
 import { UploadFile } from './interfaces/upload-file.interface';
+import { Response } from 'express';
+import { pipeline } from 'node:stream/promises';
 
 @ApiTags('Submissions')
 @ApiBearerAuth()
@@ -35,7 +39,7 @@ export class SubmissionsController {
   constructor(private readonly submissionsService: SubmissionsService) {}
 
   @Post()
-  @UseInterceptors(FilesInterceptor('files', 10))
+  @UseInterceptors(FilesInterceptor('files', 10, { limits: { fileSize: 10 * 1024 * 1024 } }))
   @ApiOperation({ summary: 'Upload proof files and create/replace submission' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -76,8 +80,9 @@ export class SubmissionsController {
   @ApiResponse({ status: 404, description: 'Submission not found' })
   async findOne(
     @Param('id', UuidValidationPipe) id: string,
+    @CurrentUser() user: any,
   ): Promise<SubmissionResponseDto> {
-    return this.submissionsService.findOne(id);
+    return this.submissionsService.findOne(id, user);
   }
 
   @Get('group/:groupId')
@@ -87,8 +92,9 @@ export class SubmissionsController {
   async findByGroup(
     @Param('groupId', UuidValidationPipe) groupId: string,
     @Query() query: PaginationQueryDto,
+    @CurrentUser() user: any,
   ): Promise<{ data: SubmissionResponseDto[]; meta: PaginationMetaDto }> {
-    return this.submissionsService.findByGroup(groupId, query);
+    return this.submissionsService.findByGroup(groupId, query, user);
   }
 
   @Get('section/:sectionId')
@@ -98,12 +104,13 @@ export class SubmissionsController {
   async findBySection(
     @Param('sectionId', UuidValidationPipe) sectionId: string,
     @Query() query: PaginationQueryDto,
+    @CurrentUser() user: any,
   ): Promise<{ data: SubmissionResponseDto[]; meta: PaginationMetaDto }> {
-    return this.submissionsService.findBySection(sectionId, query);
+    return this.submissionsService.findBySection(sectionId, query, user);
   }
 
   @Patch(':id')
-  @UseInterceptors(FilesInterceptor('files', 10))
+  @UseInterceptors(FilesInterceptor('files', 10, { limits: { fileSize: 10 * 1024 * 1024 } }))
   @ApiOperation({ summary: 'Update submission (replace files and/or metadata)' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -125,6 +132,24 @@ export class SubmissionsController {
     @CurrentUser('id') userId: string,
   ): Promise<SubmissionResponseDto> {
     return this.submissionsService.update(id, files, dto, userId);
+  }
+
+  @Get('files/:fileId/download')
+  @ApiOperation({ summary: 'Download a submission file' })
+  @ApiResponse({ status: 200, description: 'File stream' })
+  @ApiResponse({ status: 404, description: 'File not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @Header('Cache-Control', 'private, max-age=300')
+  async downloadFile(
+    @Param('fileId', UuidValidationPipe) fileId: string,
+    @CurrentUser() user: any,
+    @Res() res: Response,
+  ): Promise<void> {
+    const fileInfo = await this.submissionsService.getFileStream(fileId, user);
+    res.setHeader('Content-Type', fileInfo.contentType);
+    res.setHeader('Content-Length', fileInfo.contentLength);
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileInfo.originalFilename)}"`);
+    await pipeline(fileInfo.stream, res);
   }
 
   @Delete(':id')

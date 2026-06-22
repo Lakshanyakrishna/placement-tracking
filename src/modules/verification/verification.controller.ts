@@ -44,8 +44,9 @@ export class VerificationController {
   async findByGroup(
     @Param('groupId', UuidValidationPipe) groupId: string,
     @Query() query: PaginationQueryDto,
+    @CurrentUser() user: any,
   ): Promise<{ data: VerificationLogResponseDto[]; meta: PaginationMetaDto }> {
-    return this.verificationService.findByGroup(groupId, query);
+    return this.verificationService.findByGroup(groupId, query, user);
   }
 
   @Get('section/:sectionId')
@@ -55,8 +56,9 @@ export class VerificationController {
   async findBySection(
     @Param('sectionId', UuidValidationPipe) sectionId: string,
     @Query() query: PaginationQueryDto,
+    @CurrentUser() user: any,
   ): Promise<{ data: VerificationLogResponseDto[]; meta: PaginationMetaDto }> {
-    return this.verificationService.findBySection(sectionId, query);
+    return this.verificationService.findBySection(sectionId, query, user);
   }
 
   @Get('submission/:submissionId')
@@ -66,8 +68,9 @@ export class VerificationController {
   @ApiResponse({ status: 404, description: 'Submission not found' })
   async findBySubmission(
     @Param('submissionId', UuidValidationPipe) submissionId: string,
+    @CurrentUser() user: any,
   ): Promise<{ data: VerificationLogResponseDto[] }> {
-    return this.verificationService.findBySubmission(submissionId);
+    return this.verificationService.findBySubmission(submissionId, user);
   }
 
   @Post(':submissionId/approve')

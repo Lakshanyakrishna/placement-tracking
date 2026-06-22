@@ -6,8 +6,10 @@ import { Participation, ParticipationStatus } from './entities/participation.ent
 import { Enrollment } from '../enrollments/entities/enrollment.entity';
 import { Opportunity, OpportunityState, OpportunityType } from '../opportunities/entities/opportunity.entity';
 import { Group } from '../groups/entities/group.entity';
+import { IamService } from '../iam/iam.service';
 
 const UUID = '550e8400-e29b-41d4-a716-446655440000';
+const mockUser = { id: UUID, roles: [{ role: 'admin' }], isStudent: false };
 
 const mockOpportunity: Opportunity = {
   id: UUID, academicPeriodId: UUID, title: 'Internship', description: '',
@@ -15,14 +17,14 @@ const mockOpportunity: Opportunity = {
   createdBy: UUID, opensAt: null, closesAt: null, verificationDeadline: '7 days',
   requireProof: true, maxSubmissions: null, allowGroupSubmission: false,
   targetBranchId: null, targetSectionId: null, targetBatchId: null,
-  createdAt: new Date(), updatedAt: new Date(),
+  createdAt: new Date(), updatedAt: new Date(), deletedAt: null,
   academicPeriod: undefined as never, createdByUser: undefined as never,
 };
 
 const mockEnrollment: Enrollment = {
   id: UUID, userId: UUID, academicPeriodId: UUID, branchId: UUID,
   sectionId: UUID, batchId: UUID, groupId: null, rollNumber: null,
-  isActive: true, enrolledAt: new Date(), createdAt: new Date(), updatedAt: new Date(),
+  isActive: true, enrolledAt: new Date(), createdAt: new Date(), updatedAt: new Date(), deletedAt: null,
   user: { id: UUID, name: 'Student', email: 's@t.com' } as never,
   academicPeriod: undefined as never, branch: undefined as never,
   section: undefined as never, group: undefined as never, batch: undefined as never,
@@ -73,6 +75,10 @@ describe('ParticipationsService', () => {
         { provide: getRepositoryToken(Enrollment), useValue: enrollmentRepository },
         { provide: getRepositoryToken(Opportunity), useValue: opportunityRepository },
         { provide: getRepositoryToken(Group), useValue: groupRepository },
+        {
+          provide: IamService,
+          useValue: { findTeamLeaderGroups: jest.fn().mockResolvedValue([]), findMentorSections: jest.fn().mockResolvedValue([]) },
+        },
       ],
     }).compile();
 
@@ -159,7 +165,7 @@ describe('ParticipationsService', () => {
     it('should return a participation', async () => {
       repository.findOne.mockResolvedValue({ ...mockParticipation, opportunity: mockOpportunity });
 
-      const result = await service.findOne(UUID);
+      const result = await service.findOne(UUID, mockUser);
 
       expect(result.status).toBe(ParticipationStatus.NOT_STARTED);
     });
@@ -167,7 +173,7 @@ describe('ParticipationsService', () => {
     it('should throw NotFoundException', async () => {
       repository.findOne.mockResolvedValue(null);
 
-      await expect(service.findOne('nonexistent')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('nonexistent', mockUser)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -200,6 +206,7 @@ describe('ParticipationsService', () => {
     it('should set verifiedBy on VERIFIED transition', async () => {
       repository.findOne.mockResolvedValue({
         ...mockParticipation, status: ParticipationStatus.SUBMITTED, startedAt: new Date(), submittedAt: new Date(),
+        teamLeaderUserId: 'mentor-1',
         opportunity: mockOpportunity, enrollment: mockEnrollment,
       });
       repository.save.mockImplementation(async (e: Participation) => e);
@@ -257,7 +264,7 @@ describe('ParticipationsService', () => {
         ...mockParticipation, opportunity: mockOpportunity, enrollment: mockEnrollment,
       }], 1]);
 
-      const result = await service.findByGroup(UUID, {});
+      const result = await service.findByGroup(UUID, {}, mockUser);
 
       expect(result.data).toHaveLength(1);
     });
@@ -265,7 +272,7 @@ describe('ParticipationsService', () => {
     it('should return empty when no enrollments in group', async () => {
       enrollmentRepository.find.mockResolvedValue([]);
 
-      const result = await service.findByGroup(UUID, {});
+      const result = await service.findByGroup(UUID, {}, mockUser);
 
       expect(result.data).toHaveLength(0);
     });
@@ -278,7 +285,7 @@ describe('ParticipationsService', () => {
         ...mockParticipation, opportunity: mockOpportunity, enrollment: mockEnrollment,
       }], 1]);
 
-      const result = await service.findBySection(UUID, {});
+      const result = await service.findBySection(UUID, {}, mockUser);
 
       expect(result.data).toHaveLength(1);
     });
@@ -286,7 +293,7 @@ describe('ParticipationsService', () => {
     it('should return empty when no enrollments in section', async () => {
       enrollmentRepository.find.mockResolvedValue([]);
 
-      const result = await service.findBySection(UUID, {});
+      const result = await service.findBySection(UUID, {}, mockUser);
 
       expect(result.data).toHaveLength(0);
     });
@@ -300,7 +307,7 @@ describe('ParticipationsService', () => {
         ...mockParticipation, opportunity: mockOpportunity, enrollment: mockEnrollment,
       }], 1]);
 
-      const result = await service.findByMentor(UUID, {});
+      const result = await service.findByMentor(UUID, {}, mockUser);
 
       expect(result.data).toHaveLength(1);
     });
@@ -308,7 +315,7 @@ describe('ParticipationsService', () => {
     it('should return empty when mentor has no sections', async () => {
       (enrollmentRepository as any).manager.query.mockResolvedValue([]);
 
-      const result = await service.findByMentor(UUID, {});
+      const result = await service.findByMentor(UUID, {}, mockUser);
 
       expect(result.data).toHaveLength(0);
     });

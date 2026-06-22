@@ -14,6 +14,7 @@ type MockRepository = {
   create: jest.Mock;
   save: jest.Mock;
   remove: jest.Mock;
+  softRemove: jest.Mock;
 };
 
 function createMockRepository(): MockRepository {
@@ -24,6 +25,7 @@ function createMockRepository(): MockRepository {
     create: jest.fn(),
     save: jest.fn(),
     remove: jest.fn(),
+    softRemove: jest.fn(),
   };
 }
 
@@ -40,6 +42,7 @@ const mockEnrollment: Enrollment = {
   enrolledAt: new Date('2025-01-15'),
   createdAt: new Date('2025-01-01'),
   updatedAt: new Date('2025-01-01'),
+  deletedAt: null,
   user: { id: 'user-1', name: 'John Doe', email: 'john@example.com' } as any,
   academicPeriod: { id: 'period-1', label: '2025 Spring' } as any,
   branch: { id: 'branch-1', name: 'Computer Science' } as any,
@@ -221,13 +224,13 @@ describe('EnrollmentsService', () => {
   });
 
   describe('remove', () => {
-    it('should remove an enrollment', async () => {
+    it('should soft-delete an enrollment', async () => {
       repository.findOne.mockResolvedValue(mockEnrollment);
-      repository.remove.mockResolvedValue(mockEnrollment);
+      repository.softRemove.mockResolvedValue(mockEnrollment);
 
       await service.remove('enr-1');
 
-      expect(repository.remove).toHaveBeenCalledWith(mockEnrollment);
+      expect(repository.softRemove).toHaveBeenCalledWith(mockEnrollment);
     });
 
     it('should throw NotFoundException when enrollment to remove does not exist', async () => {

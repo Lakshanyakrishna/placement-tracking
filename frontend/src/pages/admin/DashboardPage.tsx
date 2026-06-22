@@ -1,110 +1,134 @@
+import { useQuery } from '@tanstack/react-query'
 import { useAdminDashboardData } from '@/hooks/useAdminDashboardData'
 import { CertHeatmap } from '@/components/dashboard/CertHeatmap'
 import { FollowUpQueue } from '@/components/dashboard/FollowUpQueue'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { ErrorState } from '@/components/shared/ErrorState'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, Layers, Award, ShieldCheck, GraduationCap } from 'lucide-react'
+import { BentoCard, BentoGrid } from '@/components/ui/bento-card'
+import * as sectionsApi from '@/api/sections.api'
+import { Users, Layers, Award, ShieldCheck } from 'lucide-react'
 
 export default function AdminDashboardPage() {
   const { data, isLoading, error, refetch } = useAdminDashboardData()
+  const { data: sections } = useQuery({
+    queryKey: ['sections'],
+    queryFn: () => sectionsApi.listSections(),
+  })
 
   if (isLoading) return <LoadingSpinner fullPage />
   if (error || !data) return <ErrorState onRetry={refetch} />
+
+  const section = sections?.[0]
+  const sectionCode = section?.code ?? 'Section'
 
   const groupNames = data.groupPerformance.map((g) => g.groupName)
 
   const totalCompleted = data.groupPerformance.reduce((s, g) => s + g.completed, 0)
   const totalStarted = data.groupPerformance.reduce((s, g) => s + g.completed + g.inProgress + g.notStarted, 0)
   const completionPct = totalStarted > 0 ? Math.round((totalCompleted / totalStarted) * 100) : 0
-  const pendingV = data.groupPerformance.reduce((s, g) => s + (g.students - g.completed - g.inProgress - g.notStarted), 0)
 
   return (
     <div className="space-y-6">
-      {/* Section Overview */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <GraduationCap className="h-4 w-4 text-stmarys" />
-            Section Overview
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4">
-            <h3 className="text-lg font-bold">IV-AI&DS-A</h3>
-            <p className="text-xs text-muted-foreground">
-              Artificial Intelligence &amp; Data Science
-            </p>
-          </div>
-          <div className="grid grid-cols-4 gap-4">
-            <div className="rounded-lg bg-muted/50 p-3 text-center">
-              <Users className="mx-auto h-5 w-5 text-stmarys" />
-              <p className="mt-1 text-xl font-bold">{data.summary.totalStudents}</p>
-              <p className="text-xs text-muted-foreground">Total Students</p>
+      <div>
+        <h1 className="text-xl font-semibold text-[#111827]">{sectionCode}</h1>
+        <p className="text-sm text-[#6B7280]">Section overview and certification tracking</p>
+      </div>
+
+      {/* Top Row: Stats */}
+      <BentoGrid>
+        <BentoCard>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+              <Users className="h-5 w-5 text-blue-600" />
             </div>
-            <div className="rounded-lg bg-muted/50 p-3 text-center">
-              <Layers className="mx-auto h-5 w-5 text-stmarys" />
-              <p className="mt-1 text-xl font-bold">{data.summary.totalGroups}</p>
-              <p className="text-xs text-muted-foreground">Groups</p>
-            </div>
-            <div className="rounded-lg bg-muted/50 p-3 text-center">
-              <Award className="mx-auto h-5 w-5 text-stmarys" />
-              <p className="mt-1 text-xl font-bold">{completionPct}%</p>
-              <p className="text-xs text-muted-foreground">Cert Completion</p>
-            </div>
-            <div className="rounded-lg bg-muted/50 p-3 text-center">
-              <ShieldCheck className="mx-auto h-5 w-5 text-stmarys" />
-              <p className="mt-1 text-xl font-bold">{data.summary.pendingFollowUps}</p>
-              <p className="text-xs text-muted-foreground">Pending Verifications</p>
+            <div>
+              <p className="text-2xl font-bold text-[#111827]">{data.summary.totalStudents}</p>
+              <p className="text-xs text-[#6B7280]">Students</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Group Performance Table */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">Group Performance</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">Group</th>
-                  <th className="px-4 py-3 text-center font-medium text-muted-foreground">Students</th>
-                  <th className="px-4 py-3 text-center font-medium text-muted-foreground">Completed</th>
-                  <th className="px-4 py-3 text-center font-medium text-muted-foreground">In Progress</th>
-                  <th className="px-4 py-3 text-center font-medium text-muted-foreground">Pending Verification</th>
-                  <th className="px-4 py-3 text-center font-medium text-muted-foreground">Not Started</th>
-                  <th className="px-4 py-3 text-center font-medium text-muted-foreground">Completion %</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.groupPerformance.map((g) => (
-                  <tr key={g.groupId} className="border-b last:border-0 hover:bg-muted/50">
-                    <td className="px-4 py-3 font-medium">{g.groupName}</td>
-                    <td className="px-4 py-3 text-center">{g.students}</td>
-                    <td className="px-4 py-3 text-center text-green-600 font-medium">{g.completed}</td>
-                    <td className="px-4 py-3 text-center text-blue-600">{g.inProgress}</td>
-                    <td className="px-4 py-3 text-center text-yellow-600">
-                      {g.students - g.completed - g.inProgress - g.notStarted}
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-500">{g.notStarted}</td>
-                    <td className="px-4 py-3 text-center font-semibold">{g.completionPct}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        </BentoCard>
+        <BentoCard>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50">
+              <Layers className="h-5 w-5 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-[#111827]">{data.summary.totalGroups}</p>
+              <p className="text-xs text-[#6B7280]">Groups</p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </BentoCard>
+        <BentoCard>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50">
+              <Award className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-[#111827]">{completionPct}%</p>
+              <p className="text-xs text-[#6B7280]">Cert Completion</p>
+            </div>
+          </div>
+        </BentoCard>
+        <BentoCard>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-50">
+              <ShieldCheck className="h-5 w-5 text-yellow-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-[#111827]">{data.summary.pendingFollowUps}</p>
+              <p className="text-xs text-[#6B7280]">Pending Verification</p>
+            </div>
+          </div>
+        </BentoCard>
+      </BentoGrid>
 
-      {/* Certification Matrix */}
-      <CertHeatmap rows={data.certHeatmap} groupNames={groupNames} />
+      {/* Second Row: Group Performance */}
+      <BentoCard colSpan={4}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-[#111827]">Group Performance</h2>
+        </div>
+        <div className="space-y-4">
+          {data.groupPerformance.map((g) => {
+            const pct = g.completionPct
+            return (
+              <div key={g.groupId}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-[#111827]">{g.groupName}</span>
+                  <span className="text-xs text-[#6B7280]">
+                    {g.completed}/{g.students} completed
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-[#F3F4F6]">
+                  <div
+                    className="h-2 rounded-full bg-[#B91C1C] transition-all"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <div className="flex gap-4 mt-1 text-xs text-[#6B7280]">
+                  <span>{g.inProgress} in progress</span>
+                  <span>{g.notStarted} not started</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </BentoCard>
 
-      {/* Follow-Up Queue */}
-      <FollowUpQueue items={data.followUpQueue} />
+      {/* Third Row: Cert Matrix + Follow-ups */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <BentoCard colSpan={2}>
+            <h2 className="text-sm font-semibold text-[#111827] mb-4">Certification Matrix</h2>
+            <CertHeatmap rows={data.certHeatmap} groupNames={groupNames} />
+          </BentoCard>
+        </div>
+        <div>
+          <BentoCard>
+            <h2 className="text-sm font-semibold text-[#111827] mb-4">Follow-up Queue</h2>
+            <FollowUpQueue items={data.followUpQueue} />
+          </BentoCard>
+        </div>
+      </div>
     </div>
   )
 }

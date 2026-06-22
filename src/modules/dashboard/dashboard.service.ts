@@ -39,6 +39,8 @@ interface StudentRow {
   submitted: string;
   verified: string;
   completed: string;
+  rejected: string;
+  availableOpportunities: string;
 }
 
 function toFloat(v: string): number {
@@ -60,9 +62,9 @@ export class DashboardService {
   async getAdminDashboard(): Promise<AdminDashboardDto> {
     const [row] = await this.dataSource.query<CountRow[]>(
       `SELECT
-        (SELECT COUNT(DISTINCT e.user_id) FROM enrollments e WHERE e.is_active = true) AS "totalStudents",
-        (SELECT COUNT(*) FROM opportunities) AS "totalOpportunities",
-        (SELECT COUNT(*) FROM opportunities WHERE state IN ('published','open')) AS "activeOpportunities",
+        (SELECT COUNT(DISTINCT e.user_id) FROM enrollments e WHERE e.is_active = true AND e.deleted_at IS NULL) AS "totalStudents",
+        (SELECT COUNT(*) FROM opportunities WHERE deleted_at IS NULL) AS "totalOpportunities",
+        (SELECT COUNT(*) FROM opportunities WHERE deleted_at IS NULL AND state IN ('published','open')) AS "activeOpportunities",
         (SELECT COUNT(*) FROM participations) AS "participations",
         (SELECT COUNT(*) FROM participations WHERE status = 'submitted') AS "submitted",
         (SELECT COUNT(*) FROM participations WHERE status = 'verified') AS "verified",
@@ -87,26 +89,26 @@ export class DashboardService {
   async getMentorDashboard(userId: string): Promise<MentorDashboardDto> {
     const [row] = await this.dataSource.query<MentorRow[]>(
       `SELECT
-        (SELECT COUNT(*) FROM sections WHERE mentor_user_id = $1) AS "assignedSections",
+        (SELECT COUNT(*) FROM sections WHERE mentor_user_id = $1 AND deleted_at IS NULL) AS "assignedSections",
         (SELECT COUNT(DISTINCT e.user_id) FROM enrollments e
           JOIN sections s ON e.section_id = s.id
-          WHERE s.mentor_user_id = $1) AS "totalStudents",
+          WHERE s.mentor_user_id = $1 AND e.deleted_at IS NULL AND s.deleted_at IS NULL) AS "totalStudents",
         (SELECT COUNT(DISTINCT p.opportunity_id) FROM participations p
           JOIN enrollments e ON p.enrollment_id = e.id
           JOIN sections s ON e.section_id = s.id
-          WHERE s.mentor_user_id = $1) AS "opportunitiesActive",
+          WHERE s.mentor_user_id = $1 AND e.deleted_at IS NULL AND s.deleted_at IS NULL) AS "opportunitiesActive",
         (SELECT COUNT(*) FROM participations p
           JOIN enrollments e ON p.enrollment_id = e.id
           JOIN sections s ON e.section_id = s.id
-          WHERE s.mentor_user_id = $1 AND p.status = 'submitted') AS "submitted",
+          WHERE s.mentor_user_id = $1 AND e.deleted_at IS NULL AND s.deleted_at IS NULL AND p.status = 'submitted') AS "submitted",
         (SELECT COUNT(*) FROM participations p
           JOIN enrollments e ON p.enrollment_id = e.id
           JOIN sections s ON e.section_id = s.id
-          WHERE s.mentor_user_id = $1 AND p.status = 'verified') AS "verified",
+          WHERE s.mentor_user_id = $1 AND e.deleted_at IS NULL AND s.deleted_at IS NULL AND p.status = 'verified') AS "verified",
         (SELECT COUNT(*) FROM participations p
           JOIN enrollments e ON p.enrollment_id = e.id
           JOIN sections s ON e.section_id = s.id
-          WHERE s.mentor_user_id = $1 AND p.status = 'rejected') AS "rejected"`,
+          WHERE s.mentor_user_id = $1 AND e.deleted_at IS NULL AND s.deleted_at IS NULL AND p.status = 'rejected') AS "rejected"`,
       [userId],
     );
     const v = toFloat(row.verified);
@@ -126,10 +128,10 @@ export class DashboardService {
   async getTeamLeaderDashboard(userId: string): Promise<TeamLeaderDashboardDto> {
     const [row] = await this.dataSource.query<TlRow[]>(
       `SELECT
-        (SELECT COUNT(*) FROM groups WHERE team_leader_user_id = $1) AS "assignedGroups",
+        (SELECT COUNT(*) FROM groups WHERE team_leader_user_id = $1 AND deleted_at IS NULL) AS "assignedGroups",
         (SELECT COUNT(DISTINCT e.user_id) FROM enrollments e
           JOIN groups g ON e.group_id = g.id
-          WHERE g.team_leader_user_id = $1) AS "students",
+          WHERE g.team_leader_user_id = $1 AND e.deleted_at IS NULL AND g.deleted_at IS NULL) AS "students",
         (SELECT COUNT(*) FROM participations p
           JOIN enrollments e ON p.enrollment_id = e.id
           JOIN groups g ON e.group_id = g.id
@@ -157,15 +159,27 @@ export class DashboardService {
     const [row] = await this.dataSource.query<StudentRow[]>(
       `SELECT
         (SELECT COUNT(*) FROM participations WHERE enrollment_id IN
-          (SELECT id FROM enrollments WHERE user_id = $1)) AS "assignedOpportunities",
+          (SELECT id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL)) AS "assignedOpportunities",
         (SELECT COUNT(*) FROM participations WHERE enrollment_id IN
-          (SELECT id FROM enrollments WHERE user_id = $1) AND status = 'in_progress') AS "inProgress",
+          (SELECT id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL) AND status = 'in_progress') AS "inProgress",
         (SELECT COUNT(*) FROM participations WHERE enrollment_id IN
-          (SELECT id FROM enrollments WHERE user_id = $1) AND status = 'submitted') AS "submitted",
+          (SELECT id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL) AND status = 'submitted') AS "submitted",
         (SELECT COUNT(*) FROM participations WHERE enrollment_id IN
-          (SELECT id FROM enrollments WHERE user_id = $1) AND status = 'verified') AS "verified",
+          (SELECT id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL) AND status = 'verified') AS "verified",
         (SELECT COUNT(*) FROM participations WHERE enrollment_id IN
-          (SELECT id FROM enrollments WHERE user_id = $1) AND status = 'completed') AS "completed"`,
+          (SELECT id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL) AND status = 'completed') AS "completed",
+        (SELECT COUNT(*) FROM participations WHERE enrollment_id IN
+          (SELECT id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL) AND status = 'rejected') AS "rejected",
+        (SELECT COUNT(*) FROM opportunities o WHERE o.deleted_at IS NULL AND o.state IN ('published','open')
+          AND o.id NOT IN (SELECT p.opportunity_id FROM participations p WHERE p.enrollment_id IN
+            (SELECT id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL))
+          AND (o.target_branch_id IS NULL OR o.target_branch_id IN
+            (SELECT branch_id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL))
+          AND (o.target_section_id IS NULL OR o.target_section_id IN
+            (SELECT section_id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL))
+          AND (o.target_batch_id IS NULL OR o.target_batch_id IN
+            (SELECT batch_id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL))
+        ) AS "availableOpportunities"`,
       [userId],
     );
     return {
@@ -174,6 +188,8 @@ export class DashboardService {
       submitted: toFloat(row.submitted),
       verified: toFloat(row.verified),
       completed: toFloat(row.completed),
+      rejected: toFloat(row.rejected),
+      availableOpportunities: toFloat(row.availableOpportunities),
     };
   }
 }
