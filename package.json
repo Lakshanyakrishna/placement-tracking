@@ -18,6 +18,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed": "ts-node -r tsconfig-paths/register src/scripts/seed.ts",
     "seed:admin": "ts-node -r tsconfig-paths/register src/scripts/create-admin.ts",
+    "rotate:credentials": "ts-node -r tsconfig-paths/register src/scripts/rotate-credentials.ts",
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/modules/database/data-source.ts",
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/modules/database/data-source.ts",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/modules/database/data-source.ts",
