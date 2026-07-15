@@ -132,7 +132,7 @@ describe('AuthModule (integration)', () => {
 
       const res = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
-        .send({ email: 'admin@test.com', password: 'seed@123' })
+        .send({ email: 'admin@test.com', password: 'test-password-1' })
         .expect(200);
 
       expect(res.body.accessToken).toBe('integration-test-token');
