@@ -42,7 +42,8 @@ export class StudentsImportService {
     @InjectDataSource()
     private readonly dataSource: DataSource,
   ) {
-    this.defaultPasswordHash = bcrypt.hashSync('seed@123', config.auth.bcryptRounds);
+    const defaultPassword = process.env.SEED_PASSWORD || 'dev-only-password';
+    this.defaultPasswordHash = bcrypt.hashSync(defaultPassword, config.auth.bcryptRounds);
   }
 
   async validate(file: ImportFile): Promise<ValidationResult> {

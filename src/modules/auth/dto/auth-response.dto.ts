@@ -34,7 +34,7 @@ export class UserInfo {
       sectionId: 'uuid',
       groupId: 'uuid',
       batchId: 'uuid',
-      rollNumber: '23BH1A7243',
+      rollNumber: 'TEST0001',
     },
     description: 'Active enrollment (null for non-students)',
     nullable: true,

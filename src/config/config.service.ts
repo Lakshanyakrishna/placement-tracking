@@ -10,7 +10,8 @@ export class AppConfigService {
       host: this.configService.get<string>('database.host') || 'localhost',
       port: this.configService.get<number>('database.port') || 5432,
       username: this.configService.get<string>('database.username') || 'postgres',
-      password: this.configService.get<string>('database.password') || 'dev_password_only',
+      // database.config.ts already fails fast in production and warns in dev, so this is always set.
+      password: this.configService.get<string>('database.password') as string,
       database: this.configService.get<string>('database.database') || 'placement_tracker',
       ssl: this.configService.get<boolean>('database.ssl') || false,
     };
@@ -18,7 +19,8 @@ export class AppConfigService {
 
   get jwt() {
     return {
-      secret: this.configService.get<string>('jwt.secret') || 'dev-jwt-secret',
+      // jwt.config.ts already fails fast in production and warns in dev, so this is always set.
+      secret: this.configService.get<string>('jwt.secret') as string,
       accessExpiry: this.configService.get<string>('jwt.accessExpiry') || '15m',
       refreshExpiry: this.configService.get<string>('jwt.refreshExpiry') || '7d',
       issuer: this.configService.get<string>('jwt.issuer') || 'placement-tracker',
