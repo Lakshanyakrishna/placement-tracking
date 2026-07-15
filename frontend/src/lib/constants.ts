@@ -5,6 +5,15 @@ export const ROLES = {
   STUDENT: 'student',
 } as const
 
+// Types reserved for the placement officer (admin): recruitment drives that
+// must be identical across every group, shown under "My Placements" rather
+// than "My Certifications".
+export const PLACEMENT_OFFICER_TYPES = ['placement', 'internship'] as const
+
+export function isPlacementType(opportunityType: string): boolean {
+  return (PLACEMENT_OFFICER_TYPES as readonly string[]).includes(opportunityType)
+}
+
 export const OPPORTUNITY_STATES = {
   DRAFT: 'draft',
   PUBLISHED: 'published',
@@ -37,6 +46,7 @@ export const ROUTES = {
   TEAM_LEADER_DASHBOARD: '/team-leader/dashboard',
   STUDENT_DASHBOARD: '/student/dashboard',
   STUDENT_CERTIFICATIONS: '/student/certifications',
+  STUDENT_PLACEMENTS: '/student/placements',
   STUDENT_SUBMISSIONS: '/student/submissions',
   STUDENT_PROFILE: '/student/profile',
 } as const

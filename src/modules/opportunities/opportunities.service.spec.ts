@@ -5,6 +5,9 @@ import { DataSource } from 'typeorm';
 import { OpportunitiesService } from './opportunities.service';
 import { Opportunity, OpportunityState, OpportunityType } from './entities/opportunity.entity';
 import { OpportunityTarget, TargetType } from './entities/opportunity-target.entity';
+import { IamService } from '../iam/iam.service';
+
+const adminUser = { id: 'user-1', roles: [{ role: 'admin' }] };
 
 const mockTarget: OpportunityTarget = {
   id: 'tgt-1',
@@ -43,6 +46,7 @@ function freshMock(): Opportunity {
     academicPeriodId: 'ap-1',
     title: 'Summer Internship',
     description: 'A great opportunity',
+    applicationLink: null,
     opportunityType: OpportunityType.INTERNSHIP,
     state: OpportunityState.DRAFT,
     createdBy: 'user-1',
@@ -55,6 +59,7 @@ function freshMock(): Opportunity {
     targetBranchId: null,
     targetSectionId: null,
     targetBatchId: null,
+    targetGroupId: null,
     createdAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01'),
     deletedAt: null,
@@ -81,6 +86,10 @@ describe('OpportunitiesService', () => {
           provide: DataSource,
           useValue: { query: jest.fn().mockResolvedValue([]) },
         },
+        {
+          provide: IamService,
+          useValue: { findTeamLeaderGroups: jest.fn().mockResolvedValue([]), findMentorSections: jest.fn().mockResolvedValue([]) },
+        },
       ],
     }).compile();
 
@@ -97,7 +106,7 @@ describe('OpportunitiesService', () => {
       repository.create.mockReturnValue({ ...freshMock(), ...dto });
       repository.save.mockResolvedValue({ ...freshMock(), ...dto });
 
-      const result = await service.create(dto, 'user-1');
+      const result = await service.create(dto, adminUser);
 
       expect(result.title).toBe('New Internship');
       expect(result.state).toBe(OpportunityState.DRAFT);
@@ -189,7 +198,7 @@ describe('OpportunitiesService', () => {
       repository.findOneBy.mockResolvedValue(freshMock());
       repository.save.mockResolvedValue({ ...freshMock(), title: 'Updated Title' });
 
-      const result = await service.update('opp-1', { title: 'Updated Title' });
+      const result = await service.update('opp-1', { title: 'Updated Title' }, adminUser);
 
       expect(result.title).toBe('Updated Title');
       expect(repository.findOneBy).toHaveBeenCalledWith({ id: 'opp-1' });
@@ -198,7 +207,7 @@ describe('OpportunitiesService', () => {
     it('should throw NotFoundException when not found', async () => {
       repository.findOneBy.mockResolvedValue(null);
 
-      await expect(service.update('nonexistent', { title: 'Test' })).rejects.toThrow(NotFoundException);
+      await expect(service.update('nonexistent', { title: 'Test' }, adminUser)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -207,7 +216,7 @@ describe('OpportunitiesService', () => {
       repository.findOneBy.mockResolvedValue(freshMock());
       repository.softRemove.mockResolvedValue(freshMock());
 
-      await service.remove('opp-1');
+      await service.remove('opp-1', adminUser);
 
       expect(repository.findOneBy).toHaveBeenCalledWith({ id: 'opp-1' });
       expect(repository.softRemove).toHaveBeenCalledWith(freshMock());
@@ -216,14 +225,14 @@ describe('OpportunitiesService', () => {
     it('should throw ConflictException when not draft', async () => {
       repository.findOneBy.mockResolvedValue({ ...freshMock(), state: OpportunityState.PUBLISHED });
 
-      await expect(service.remove('opp-1')).rejects.toThrow(ConflictException);
+      await expect(service.remove('opp-1', adminUser)).rejects.toThrow(ConflictException);
       expect(repository.softRemove).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when not found', async () => {
       repository.findOneBy.mockResolvedValue(null);
 
-      await expect(service.remove('nonexistent')).rejects.toThrow(NotFoundException);
+      await expect(service.remove('nonexistent', adminUser)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -232,7 +241,7 @@ describe('OpportunitiesService', () => {
       repository.findOneBy.mockResolvedValue(freshMock());
       repository.save.mockResolvedValue({ ...freshMock(), state: OpportunityState.PUBLISHED });
 
-      const result = await service.publish('opp-1');
+      const result = await service.publish('opp-1', adminUser);
 
       expect(result.state).toBe(OpportunityState.PUBLISHED);
     });
@@ -240,13 +249,13 @@ describe('OpportunitiesService', () => {
     it('should throw BadRequestException when already published', async () => {
       repository.findOneBy.mockResolvedValue({ ...freshMock(), state: OpportunityState.PUBLISHED });
 
-      await expect(service.publish('opp-1')).rejects.toThrow(BadRequestException);
+      await expect(service.publish('opp-1', adminUser)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw NotFoundException when not found', async () => {
       repository.findOneBy.mockResolvedValue(null);
 
-      await expect(service.publish('nonexistent')).rejects.toThrow(NotFoundException);
+      await expect(service.publish('nonexistent', adminUser)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -255,7 +264,7 @@ describe('OpportunitiesService', () => {
       repository.findOneBy.mockResolvedValue({ ...freshMock(), state: OpportunityState.PUBLISHED });
       repository.save.mockResolvedValue({ ...freshMock(), state: OpportunityState.ARCHIVED });
 
-      const result = await service.archive('opp-1');
+      const result = await service.archive('opp-1', adminUser);
 
       expect(result.state).toBe(OpportunityState.ARCHIVED);
     });
@@ -263,13 +272,13 @@ describe('OpportunitiesService', () => {
     it('should throw BadRequestException when already archived', async () => {
       repository.findOneBy.mockResolvedValue({ ...freshMock(), state: OpportunityState.ARCHIVED });
 
-      await expect(service.archive('opp-1')).rejects.toThrow(BadRequestException);
+      await expect(service.archive('opp-1', adminUser)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when draft', async () => {
       repository.findOneBy.mockResolvedValue(freshMock());
 
-      await expect(service.archive('opp-1')).rejects.toThrow(BadRequestException);
+      await expect(service.archive('opp-1', adminUser)).rejects.toThrow(BadRequestException);
     });
   });
 

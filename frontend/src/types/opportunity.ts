@@ -2,6 +2,7 @@ export interface Opportunity {
   id: string
   title: string
   description: string
+  applicationLink: string | null
   opportunityType: string
   state: string
   createdBy: string
@@ -14,6 +15,7 @@ export interface Opportunity {
   targetBranchId: string | null
   targetSectionId: string | null
   targetBatchId: string | null
+  targetGroupId: string | null
   createdAt: string
   updatedAt: string
 }
@@ -21,12 +23,15 @@ export interface Opportunity {
 export interface CreateOpportunityDto {
   title: string
   description?: string
+  applicationLink?: string
   opportunityType: string
+  academicPeriodId: string
   opensAt?: string
   closesAt?: string
   requireProof?: boolean
   maxSubmissions?: number
   allowGroupSubmission?: boolean
+  visibilityScope?: 'group' | 'section'
 }
 
 export interface UpdateOpportunityDto extends Partial<CreateOpportunityDto> {

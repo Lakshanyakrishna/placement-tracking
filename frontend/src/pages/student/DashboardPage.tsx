@@ -10,6 +10,7 @@ import * as participationsApi from '@/api/participations.api'
 import * as opportunitiesApi from '@/api/opportunities.api'
 import { FileText, Clock, CheckCircle, AlertCircle, ArrowRight, Sparkles, XCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { isPlacementType } from '@/lib/constants'
 
 function getUrgency(closesAt: string | null | undefined): { label: string; className: string } | null {
   if (!closesAt) return null
@@ -49,20 +50,19 @@ export default function StudentDashboardPage() {
     enabled: !!user,
   })
 
-  const { data: certifications } = useQuery({
-    queryKey: ['my-certifications-brief'],
+  const { data: allParticipations } = useQuery({
+    queryKey: ['my-participations-brief'],
     queryFn: async () => {
       const res = await participationsApi.getMyParticipations()
-      return (res.data ?? []).slice(0, 4)
+      return res.data ?? []
     },
     enabled: !!user,
   })
 
-  const { data: availableOpps } = useQuery({
+  const { data: allAvailableOpps } = useQuery({
     queryKey: ['available-opportunities-brief'],
     queryFn: async () => {
-      const opps = await opportunitiesApi.getAvailableOpportunities()
-      return opps.slice(0, 3)
+      return await opportunitiesApi.getAvailableOpportunities()
     },
     enabled: !!user,
   })
@@ -70,7 +70,12 @@ export default function StudentDashboardPage() {
   if (isLoading) return <LoadingSpinner fullPage />
   if (error || !dash) return <ErrorState onRetry={refetch} />
 
-  const needsAttention = (certifications ?? []).filter(c => c.status === 'rejected')
+  const certifications = (allParticipations ?? []).filter((p) => !isPlacementType(p.opportunity?.opportunityType ?? p.opportunityType ?? '')).slice(0, 4)
+  const placements = (allParticipations ?? []).filter((p) => isPlacementType(p.opportunity?.opportunityType ?? p.opportunityType ?? '')).slice(0, 4)
+  const availableOpps = (allAvailableOpps ?? []).filter((o) => !isPlacementType(o.opportunityType)).slice(0, 3)
+  const availablePlacements = (allAvailableOpps ?? []).filter((o) => isPlacementType(o.opportunityType)).slice(0, 3)
+
+  const needsAttention = certifications.filter(c => c.status === 'rejected')
 
   return (
     <div className="space-y-6">
@@ -90,7 +95,7 @@ export default function StudentDashboardPage() {
           <CardContent className="p-4 flex items-center gap-3">
             <XCircle className="h-5 w-5 text-red-600 shrink-0" />
             <div className="text-sm text-red-800">
-              <strong>{dash.summary.rejected} certification{dash.summary.rejected > 1 ? 's' : ''} need{dash.summary.rejected === 1 ? 's' : ''} attention.</strong>
+              <strong>{dash.summary.rejected} item{dash.summary.rejected > 1 ? 's' : ''} need{dash.summary.rejected === 1 ? 's' : ''} attention.</strong>
               {' '}Please check the rejection reason and re-upload.
             </div>
             <button
@@ -124,7 +129,7 @@ export default function StudentDashboardPage() {
         ))}
       </div>
 
-      {dash.summary.rejected > 0 && (
+      {needsAttention.length > 0 && (
         <Card className="border-red-200">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
@@ -151,7 +156,7 @@ export default function StudentDashboardPage() {
         </Card>
       )}
 
-      {dash.summary.available > 0 && (
+      {availableOpps.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-[#111827]">Available Certifications</h2>
@@ -163,11 +168,34 @@ export default function StudentDashboardPage() {
             </button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {(availableOpps ?? []).length === 0 && dash.summary.available > 0 && (
-              <p className="col-span-full text-sm text-[#6B7280]">{dash.summary.available} certification{dash.summary.available > 1 ? 's' : ''} available.</p>
-            )}
-            {(availableOpps ?? []).map((opp) => (
+            {availableOpps.map((opp) => (
               <Card key={opp.id} className="hover:shadow-md transition-shadow cursor-pointer border-purple-100" onClick={() => navigate('/student/certifications')}>
+                <CardContent className="p-4">
+                  <p className="text-sm font-medium text-[#111827] line-clamp-2">{opp.title}</p>
+                  <span className="mt-2 inline-block rounded bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
+                    Available
+                  </span>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {availablePlacements.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-[#111827]">Available Placements</h2>
+            <button
+              onClick={() => navigate('/student/placements')}
+              className="flex items-center gap-1 text-xs font-medium text-[#B91C1C] hover:text-[#991B1B]"
+            >
+              View all <ArrowRight className="h-3 w-3" />
+            </button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {availablePlacements.map((opp) => (
+              <Card key={opp.id} className="hover:shadow-md transition-shadow cursor-pointer border-purple-100" onClick={() => navigate('/student/placements')}>
                 <CardContent className="p-4">
                   <p className="text-sm font-medium text-[#111827] line-clamp-2">{opp.title}</p>
                   <span className="mt-2 inline-block rounded bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
@@ -191,10 +219,10 @@ export default function StudentDashboardPage() {
           </button>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {(certifications ?? []).length === 0 && (
+          {certifications.length === 0 && (
             <p className="col-span-full text-sm text-[#6B7280]">No certifications assigned yet.</p>
           )}
-          {(certifications ?? []).map((cert) => {
+          {certifications.map((cert) => {
             const statusColors: Record<string, string> = {
               not_started: 'bg-gray-100 text-gray-700',
               in_progress: 'bg-blue-100 text-blue-700',
@@ -217,6 +245,51 @@ export default function StudentDashboardPage() {
                   )}
                   <span className={`mt-2 inline-block rounded px-2 py-0.5 text-xs font-medium ${statusColors[cert.status] ?? 'bg-gray-100 text-gray-700'}`}>
                     {cert.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </span>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-[#111827]">My Placements</h2>
+          <button
+            onClick={() => navigate('/student/placements')}
+            className="flex items-center gap-1 text-xs font-medium text-[#B91C1C] hover:text-[#991B1B]"
+          >
+            View all <ArrowRight className="h-3 w-3" />
+          </button>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {placements.length === 0 && (
+            <p className="col-span-full text-sm text-[#6B7280]">No placement drives assigned yet.</p>
+          )}
+          {placements.map((drive) => {
+            const statusColors: Record<string, string> = {
+              not_started: 'bg-gray-100 text-gray-700',
+              in_progress: 'bg-blue-100 text-blue-700',
+              submitted: 'bg-yellow-100 text-yellow-700',
+              verified: 'bg-green-100 text-green-700',
+              completed: 'bg-emerald-100 text-emerald-700',
+              rejected: 'bg-red-100 text-red-700',
+            }
+            const urgency = getUrgency(drive.opportunity?.closesAt)
+            return (
+              <Card key={drive.id} className={`hover:shadow-md transition-shadow cursor-pointer ${urgency ? 'border-l-4 ' + urgency.className.split(' ').slice(-1)[0] : ''}`} onClick={() => navigate('/student/placements')}>
+                <CardContent className="p-4">
+                  <p className="text-sm font-medium text-[#111827] line-clamp-2">
+                    {drive.opportunity?.title ?? drive.opportunityTitle ?? 'Unknown'}
+                  </p>
+                  {urgency && (
+                    <p className={`mt-1 text-xs font-medium ${urgency.className.split(' ')[0]}`}>
+                      {urgency.label}
+                    </p>
+                  )}
+                  <span className={`mt-2 inline-block rounded px-2 py-0.5 text-xs font-medium ${statusColors[drive.status] ?? 'bg-gray-100 text-gray-700'}`}>
+                    {drive.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </span>
                 </CardContent>
               </Card>

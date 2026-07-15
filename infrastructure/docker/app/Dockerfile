@@ -48,6 +48,11 @@ CMD ["npm", "run", "start:dev"]
 # ============================================================
 FROM base AS production
 
+# Drives production-only behavior (secure cross-site cookies, etc). Set here
+# rather than relying on the host to configure it, since a custom Dockerfile
+# build (unlike Railway's Nixpacks builder) doesn't set this automatically.
+ENV NODE_ENV=production
+
 RUN apk add --no-cache curl
 
 COPY --from=build /app/dist ./dist

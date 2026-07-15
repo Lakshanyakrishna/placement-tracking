@@ -1,6 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsUUID, IsOptional, IsBoolean, IsInt, Min, Max, IsEnum, MinLength, MaxLength, IsDateString } from 'class-validator';
+import { IsString, IsUUID, IsOptional, IsBoolean, IsInt, Min, Max, IsEnum, MinLength, MaxLength, IsDateString, IsUrl, IsIn } from 'class-validator';
 import { OpportunityType } from '../entities/opportunity.entity';
+
+export enum VisibilityScope {
+  GROUP = 'group',
+  SECTION = 'section',
+}
 
 export class CreateOpportunityDto {
   @ApiProperty({ example: 'Summer Internship 2026' })
@@ -13,6 +18,12 @@ export class CreateOpportunityDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiPropertyOptional({ example: 'https://company.example.com/careers/apply' })
+  @IsOptional()
+  @IsUrl({ require_protocol: true })
+  @MaxLength(2048)
+  applicationLink?: string;
 
   @ApiProperty({ enum: OpportunityType, example: OpportunityType.INTERNSHIP })
   @IsEnum(OpportunityType)
@@ -52,4 +63,13 @@ export class CreateOpportunityDto {
   @IsOptional()
   @IsBoolean()
   allowGroupSubmission?: boolean;
+
+  @ApiPropertyOptional({
+    enum: VisibilityScope,
+    description:
+      'For team leaders / mentors only: which of their own scopes to publish under. Ignored for admins (always global). Server resolves the actual group/section id from the caller\'s own role assignments — this cannot be used to target someone else\'s group.',
+  })
+  @IsOptional()
+  @IsIn(Object.values(VisibilityScope))
+  visibilityScope?: VisibilityScope;
 }

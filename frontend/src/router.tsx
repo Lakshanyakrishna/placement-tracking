@@ -10,6 +10,7 @@ import MentorDashboardPage from '@/pages/mentor/DashboardPage'
 import TeamLeaderDashboardPage from '@/pages/team-leader/DashboardPage'
 import StudentDashboardPage from '@/pages/student/DashboardPage'
 import CertificationsPage from '@/pages/student/CertificationsPage'
+import PlacementsPage from '@/pages/student/PlacementsPage'
 import SubmissionsPage from '@/pages/student/SubmissionsPage'
 import ProfilePage from '@/pages/student/ProfilePage'
 import OpportunityListPage from '@/pages/opportunities/ListPage'
@@ -51,7 +52,7 @@ export const router = createBrowserRouter([
       {
         path: 'admin/opportunities',
         element: (
-          <RoleGuard allowedRoles={[ROLES.ADMIN]}>
+          <RoleGuard allowedRoles={[ROLES.ADMIN, ROLES.MENTOR, ROLES.TEAM_LEADER]}>
             <OpportunityListPage />
           </RoleGuard>
         ),
@@ -59,7 +60,7 @@ export const router = createBrowserRouter([
       {
         path: 'admin/opportunities/new',
         element: (
-          <RoleGuard allowedRoles={[ROLES.ADMIN]}>
+          <RoleGuard allowedRoles={[ROLES.ADMIN, ROLES.MENTOR, ROLES.TEAM_LEADER]}>
             <OpportunityCreatePage />
           </RoleGuard>
         ),
@@ -67,7 +68,7 @@ export const router = createBrowserRouter([
       {
         path: 'admin/opportunities/:id/edit',
         element: (
-          <RoleGuard allowedRoles={[ROLES.ADMIN]}>
+          <RoleGuard allowedRoles={[ROLES.ADMIN, ROLES.MENTOR, ROLES.TEAM_LEADER]}>
             <OpportunityEditPage />
           </RoleGuard>
         ),
@@ -117,6 +118,14 @@ export const router = createBrowserRouter([
         element: (
           <RoleGuard allowedRoles={['student']}>
             <CertificationsPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: 'student/placements',
+        element: (
+          <RoleGuard allowedRoles={['student']}>
+            <PlacementsPage />
           </RoleGuard>
         ),
       },

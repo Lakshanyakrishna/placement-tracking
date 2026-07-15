@@ -1,13 +1,14 @@
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { useOpportunities, usePublishOpportunity, useDeleteOpportunity } from '@/hooks/useOpportunities'
+import { useOpportunities, usePublishOpportunity, useDeleteOpportunity, useArchiveOpportunity } from '@/hooks/useOpportunities'
+import { useAuth } from '@/contexts/AuthContext'
 import { DataTable } from '@/components/shared/DataTable'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { ErrorState } from '@/components/shared/ErrorState'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ROUTES, OPPORTUNITY_STATES } from '@/lib/constants'
-import { Plus, Send, Archive, Trash2 } from 'lucide-react'
+import { ROUTES, OPPORTUNITY_STATES, isPlacementType } from '@/lib/constants'
+import { Plus, Send, Archive, Trash2, Pencil } from 'lucide-react'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import type { Opportunity } from '@/types/opportunity'
 
@@ -23,9 +24,12 @@ const stateColors: Record<string, string> = {
 export default function OpportunityListPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const isAdmin = !!user?.roles.includes('admin')
   const page = Number(searchParams.get('page')) || 1
   const { data, isLoading, error, refetch } = useOpportunities({ page, limit: 20 })
   const publish = usePublishOpportunity()
+  const archive = useArchiveOpportunity()
   const deleteOpp = useDeleteOpportunity()
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
@@ -36,6 +40,10 @@ export default function OpportunityListPage() {
     try { await publish.mutateAsync(id) } catch { /* toast */ }
   }
 
+  const handleArchive = async (id: string) => {
+    try { await archive.mutateAsync(id) } catch { /* toast */ }
+  }
+
   const handleDelete = async () => {
     if (!deleteId) return
     try {
@@ -44,14 +52,24 @@ export default function OpportunityListPage() {
     } catch { /* toast */ }
   }
 
+  const rows = isAdmin
+    ? data?.data ?? []
+    : (data?.data ?? []).filter((o) => o.createdBy === user?.id || isPlacementType(o.opportunityType))
+
+  const canManage = (row: Opportunity) => isAdmin || row.createdBy === user?.id
+
   const columns = [
     {
       key: 'title',
       label: 'Title',
       render: (row: Opportunity) => (
-        <button className="font-medium hover:underline" onClick={() => navigate(ROUTES.ADMIN_OPPORTUNITIES_EDIT(row.id))}>
-          {row.title}
-        </button>
+        canManage(row) ? (
+          <button className="font-medium hover:underline" onClick={() => navigate(ROUTES.ADMIN_OPPORTUNITIES_EDIT(row.id))}>
+            {row.title}
+          </button>
+        ) : (
+          <span className="font-medium">{row.title}</span>
+        )
       ),
     },
     { key: 'opportunityType', label: 'Type' },
@@ -74,23 +92,33 @@ export default function OpportunityListPage() {
       key: 'actions',
       label: '',
       render: (row: Opportunity) => (
-        <div className="flex gap-1">
-          {row.state === OPPORTUNITY_STATES.DRAFT && (
-            <>
-              <Button size="sm" variant="ghost" onClick={() => handlePublish(row.id)} disabled={publish.isPending}>
-                <Send className="h-4 w-4" />
-              </Button>
-              <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setDeleteId(row.id)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </>
-          )}
-          {row.state === OPPORTUNITY_STATES.PUBLISHED && (
-            <Button size="sm" variant="ghost" onClick={() => /* archive would go here */ null}>
-              <Archive className="h-4 w-4" />
+        canManage(row) ? (
+          <div className="flex gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              title="Edit"
+              onClick={() => navigate(ROUTES.ADMIN_OPPORTUNITIES_EDIT(row.id))}
+            >
+              <Pencil className="h-4 w-4" />
             </Button>
-          )}
-        </div>
+            {row.state === OPPORTUNITY_STATES.DRAFT && (
+              <>
+                <Button size="sm" variant="ghost" title="Publish" onClick={() => handlePublish(row.id)} disabled={publish.isPending}>
+                  <Send className="h-4 w-4" />
+                </Button>
+                <Button size="sm" variant="ghost" title="Delete" className="text-destructive" onClick={() => setDeleteId(row.id)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+            {(row.state === OPPORTUNITY_STATES.PUBLISHED || row.state === OPPORTUNITY_STATES.OPEN || row.state === OPPORTUNITY_STATES.CLOSED) && (
+              <Button size="sm" variant="ghost" title="Archive" onClick={() => handleArchive(row.id)} disabled={archive.isPending}>
+                <Archive className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        ) : null
       ),
     },
   ]
@@ -99,17 +127,19 @@ export default function OpportunityListPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Opportunities</h1>
-          <p className="text-muted-foreground">Manage placement opportunities</p>
+          <h1 className="text-2xl font-bold tracking-tight">{isAdmin ? 'Opportunities' : 'Certifications'}</h1>
+          <p className="text-muted-foreground">
+            {isAdmin ? 'Manage placement opportunities' : 'Manage certifications for your students, plus view placement drives'}
+          </p>
         </div>
         <Button onClick={() => navigate(ROUTES.ADMIN_OPPORTUNITIES_NEW)}>
           <Plus className="mr-2 h-4 w-4" />
-          Create Opportunity
+          {isAdmin ? 'Create Opportunity' : 'Post Certification'}
         </Button>
       </div>
       <DataTable
         columns={columns}
-        data={data?.data ?? []}
+        data={rows}
         meta={data?.meta}
         onPageChange={(p) => setSearchParams({ page: String(p) })}
         keyExtractor={(row: Opportunity) => row.id}

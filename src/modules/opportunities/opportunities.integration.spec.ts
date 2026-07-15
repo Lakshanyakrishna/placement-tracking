@@ -18,6 +18,7 @@ const mockOpportunity: OpportunityResponseDto = {
   academicPeriodId: UUID,
   title: 'Summer Internship',
   description: 'A great opportunity',
+  applicationLink: null,
   opportunityType: OpportunityType.INTERNSHIP,
   state: OpportunityState.DRAFT,
   createdBy: UUID,
@@ -27,6 +28,7 @@ const mockOpportunity: OpportunityResponseDto = {
   requireProof: true,
   maxSubmissions: null,
   allowGroupSubmission: false,
+  targetGroupId: null,
   createdAt: new Date('2025-01-01'),
   updatedAt: new Date('2025-01-01'),
 };

@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { ROLES, ROUTES } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-import { LayoutDashboard, Users, Briefcase, ShieldCheck, FileText, LogOut, GraduationCap } from 'lucide-react'
+import { LayoutDashboard, Users, Briefcase, ShieldCheck, FileText, LogOut, GraduationCap, Building2 } from 'lucide-react'
 
 interface NavItem {
   label: string
@@ -22,8 +22,10 @@ const adminNavItems: NavItem[] = [
 const otherNavItems: NavItem[] = [
   { label: 'Dashboard', href: ROUTES.MENTOR_DASHBOARD, icon: <ShieldCheck className="h-4 w-4" />, roles: [ROLES.MENTOR] },
   { label: 'Dashboard', href: ROUTES.TEAM_LEADER_DASHBOARD, icon: <Users className="h-4 w-4" />, roles: [ROLES.TEAM_LEADER] },
+  { label: 'Certifications', href: ROUTES.ADMIN_OPPORTUNITIES, icon: <Briefcase className="h-4 w-4" />, roles: [ROLES.MENTOR, ROLES.TEAM_LEADER] },
   { label: 'Dashboard', href: ROUTES.STUDENT_DASHBOARD, icon: <LayoutDashboard className="h-4 w-4" />, roles: ['student'] },
   { label: 'My Certifications', href: ROUTES.STUDENT_CERTIFICATIONS, icon: <GraduationCap className="h-4 w-4" />, roles: ['student'] },
+  { label: 'My Placements', href: ROUTES.STUDENT_PLACEMENTS, icon: <Building2 className="h-4 w-4" />, roles: ['student'] },
   { label: 'My Submissions', href: ROUTES.STUDENT_SUBMISSIONS, icon: <FileText className="h-4 w-4" />, roles: ['student'] },
   { label: 'Profile', href: ROUTES.STUDENT_PROFILE, icon: <Users className="h-4 w-4" />, roles: ['student'] },
 ]

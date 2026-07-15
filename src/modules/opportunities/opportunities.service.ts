@@ -1,15 +1,22 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere, Like, In, DataSource } from 'typeorm';
-import { Opportunity, OpportunityState } from './entities/opportunity.entity';
+import { Opportunity, OpportunityState, OpportunityType } from './entities/opportunity.entity';
 import { OpportunityTarget, TargetType } from './entities/opportunity-target.entity';
 import { PaginationQueryDto, PaginationMetaDto, createPaginationMeta, parseSort } from '../../common/dto/pagination.dto';
-import { CreateOpportunityDto } from './dto/create-opportunity.dto';
+import { CreateOpportunityDto, VisibilityScope } from './dto/create-opportunity.dto';
 import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
 import { OpportunityResponseDto } from './dto/opportunity-response.dto';
 import { OpportunityFilterDto } from './dto/opportunity-filter.dto';
 import { SetTargetsDto, TargetItemDto } from './dto/set-targets.dto';
 import { TargetResponseDto } from './dto/target-response.dto';
+import { IamService } from '../iam/iam.service';
+
+type RequestUser = { id: string; roles?: Array<{ role: string }>; isStudent?: boolean };
+
+// Types reserved for the placement officer (admin): they represent recruitment
+// drives that must be identical across every group, not per-group certifications.
+const PLACEMENT_OFFICER_TYPES: OpportunityType[] = [OpportunityType.PLACEMENT, OpportunityType.INTERNSHIP];
 
 @Injectable()
 export class OpportunitiesService {
@@ -19,12 +26,64 @@ export class OpportunitiesService {
     @InjectRepository(OpportunityTarget)
     private readonly targetRepository: Repository<OpportunityTarget>,
     @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly iamService: IamService,
   ) {}
 
-  async create(dto: CreateOpportunityDto, userId: string): Promise<OpportunityResponseDto> {
+  private rolesOf(user: RequestUser): string[] {
+    const roles = (user.roles ?? []).map((r) => r.role);
+    if (user.isStudent) roles.push('student');
+    return roles;
+  }
+
+  async create(dto: CreateOpportunityDto, user: RequestUser): Promise<OpportunityResponseDto> {
+    const userRoles = this.rolesOf(user);
+    const isAdmin = userRoles.includes('admin');
+
+    let targetGroupId: string | null = null;
+    let targetSectionId: string | null = null;
+
+    if (!isAdmin) {
+      if (PLACEMENT_OFFICER_TYPES.includes(dto.opportunityType)) {
+        throw new ForbiddenException('Only admins (placement officers) can create placement or internship opportunities');
+      }
+
+      const isTeamLeader = userRoles.includes('team_leader');
+      const isMentor = userRoles.includes('mentor');
+      if (!isTeamLeader && !isMentor) {
+        throw new ForbiddenException('You do not have permission to create opportunities');
+      }
+
+      if (dto.visibilityScope === VisibilityScope.SECTION && isMentor) {
+        const sections = await this.iamService.findMentorSections(user.id);
+        if (sections.length === 0) {
+          throw new ForbiddenException('You are not assigned as a mentor for any section');
+        }
+        targetSectionId = sections[0].id;
+      } else if (dto.visibilityScope === VisibilityScope.GROUP && isTeamLeader) {
+        const groups = await this.iamService.findTeamLeaderGroups(user.id);
+        if (groups.length === 0) {
+          throw new ForbiddenException('You are not assigned as a team leader for any group');
+        }
+        targetGroupId = groups[0].id;
+      } else if (isTeamLeader) {
+        const groups = await this.iamService.findTeamLeaderGroups(user.id);
+        if (groups.length === 0) {
+          throw new ForbiddenException('You are not assigned as a team leader for any group');
+        }
+        targetGroupId = groups[0].id;
+      } else {
+        const sections = await this.iamService.findMentorSections(user.id);
+        if (sections.length === 0) {
+          throw new ForbiddenException('You are not assigned as a mentor for any section');
+        }
+        targetSectionId = sections[0].id;
+      }
+    }
+
+    const { visibilityScope: _visibilityScope, ...rest } = dto;
     const entity = this.repository.create({
-      ...dto,
-      createdBy: userId,
+      ...rest,
+      createdBy: user.id,
       state: OpportunityState.DRAFT,
       description: dto.description ?? '',
       verificationDeadline: dto.verificationDeadline ?? '7 days',
@@ -32,6 +91,8 @@ export class OpportunitiesService {
       allowGroupSubmission: dto.allowGroupSubmission ?? false,
       opensAt: dto.opensAt ? new Date(dto.opensAt) : null,
       closesAt: dto.closesAt ? new Date(dto.closesAt) : null,
+      targetGroupId,
+      targetSectionId,
     });
     const saved = await this.repository.save(entity);
     return OpportunityResponseDto.fromEntity(saved);
@@ -97,12 +158,24 @@ export class OpportunitiesService {
     return OpportunityResponseDto.fromEntity(entity, targets.map(TargetResponseDto.fromEntity));
   }
 
-  async update(id: string, dto: UpdateOpportunityDto): Promise<OpportunityResponseDto> {
+  private assertOwnerOrAdmin(entity: Opportunity, user: RequestUser): void {
+    const isAdmin = this.rolesOf(user).includes('admin');
+    if (!isAdmin && entity.createdBy !== user.id) {
+      throw new ForbiddenException('You can only manage opportunities you created');
+    }
+  }
+
+  async update(id: string, dto: UpdateOpportunityDto, user: RequestUser): Promise<OpportunityResponseDto> {
     const entity = await this.repository.findOneBy({ id });
     if (!entity) {
       throw new NotFoundException(`Opportunity with id "${id}" not found`);
     }
-    const updateData: Record<string, unknown> = { ...dto };
+    this.assertOwnerOrAdmin(entity, user);
+    if (!this.rolesOf(user).includes('admin') && dto.opportunityType && PLACEMENT_OFFICER_TYPES.includes(dto.opportunityType)) {
+      throw new ForbiddenException('Only admins (placement officers) can set the placement or internship type');
+    }
+    const { visibilityScope: _visibilityScope, ...rest } = dto;
+    const updateData: Record<string, unknown> = { ...rest };
     if (dto.opensAt) updateData.opensAt = new Date(dto.opensAt);
     if (dto.closesAt) updateData.closesAt = new Date(dto.closesAt);
     Object.assign(entity, updateData);
@@ -110,22 +183,24 @@ export class OpportunitiesService {
     return OpportunityResponseDto.fromEntity(saved);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, user: RequestUser): Promise<void> {
     const entity = await this.repository.findOneBy({ id });
     if (!entity) {
       throw new NotFoundException(`Opportunity with id "${id}" not found`);
     }
+    this.assertOwnerOrAdmin(entity, user);
     if (entity.state !== OpportunityState.DRAFT) {
       throw new ConflictException('Only draft opportunities can be deleted');
     }
     await this.repository.softRemove(entity);
   }
 
-  async publish(id: string): Promise<OpportunityResponseDto> {
+  async publish(id: string, user: RequestUser): Promise<OpportunityResponseDto> {
     const entity = await this.repository.findOneBy({ id });
     if (!entity) {
       throw new NotFoundException(`Opportunity with id "${id}" not found`);
     }
+    this.assertOwnerOrAdmin(entity, user);
     if (entity.state !== OpportunityState.DRAFT) {
       throw new BadRequestException(`Cannot publish an opportunity in "${entity.state}" state`);
     }
@@ -134,11 +209,12 @@ export class OpportunitiesService {
     return OpportunityResponseDto.fromEntity(saved);
   }
 
-  async archive(id: string): Promise<OpportunityResponseDto> {
+  async archive(id: string, user: RequestUser): Promise<OpportunityResponseDto> {
     const entity = await this.repository.findOneBy({ id });
     if (!entity) {
       throw new NotFoundException(`Opportunity with id "${id}" not found`);
     }
+    this.assertOwnerOrAdmin(entity, user);
     if (entity.state === OpportunityState.ARCHIVED) {
       throw new BadRequestException('Opportunity is already archived');
     }
@@ -201,6 +277,10 @@ export class OpportunitiesService {
          AND (
            o.target_batch_id IS NULL
            OR o.target_batch_id IN (SELECT batch_id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL)
+         )
+         AND (
+           o.target_group_id IS NULL
+           OR o.target_group_id IN (SELECT group_id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL)
          )
        ORDER BY o.created_at DESC`,
       [userId],

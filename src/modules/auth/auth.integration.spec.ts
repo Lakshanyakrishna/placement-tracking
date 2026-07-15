@@ -109,6 +109,7 @@ describe('AuthModule (integration)', () => {
         name: 'Admin User',
         contactPhone: null,
         isActive: true,
+        mustChangePassword: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -123,6 +124,7 @@ describe('AuthModule (integration)', () => {
           email: 'admin@test.com',
           name: 'Admin User',
           isActive: true,
+          mustChangePassword: false,
           roles: [{ role: 'admin', scopeType: 'global', scopeId: null }],
           enrollment: null,
         },

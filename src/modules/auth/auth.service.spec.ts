@@ -29,6 +29,7 @@ const mockUser: User = {
   name: 'Test User',
   contactPhone: '+91-9876543210',
   isActive: true,
+  mustChangePassword: false,
   createdAt: new Date('2025-01-01'),
   updatedAt: new Date('2025-01-01'),
 };

@@ -34,15 +34,15 @@ export class OpportunitiesController {
   constructor(private readonly opportunitiesService: OpportunitiesService) {}
 
   @Post()
-  @Roles('admin')
+  @Roles('admin', 'mentor', 'team_leader')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new opportunity (draft)' })
   @ApiResponse({ status: 201, description: 'Opportunity created', type: OpportunityResponseDto })
   async create(
     @Body() dto: CreateOpportunityDto,
-    @CurrentUser('id') userId: string,
+    @CurrentUser() user: any,
   ): Promise<OpportunityResponseDto> {
-    return this.opportunitiesService.create(dto, userId);
+    return this.opportunitiesService.create(dto, user);
   }
 
   @Get()
@@ -74,30 +74,31 @@ export class OpportunitiesController {
   }
 
   @Patch(':id')
-  @Roles('admin')
+  @Roles('admin', 'mentor', 'team_leader')
   @ApiOperation({ summary: 'Update an opportunity' })
   @ApiResponse({ status: 200, description: 'Opportunity updated', type: OpportunityResponseDto })
   @ApiResponse({ status: 404, description: 'Opportunity not found' })
   async update(
     @Param('id', UuidValidationPipe) id: string,
     @Body() dto: UpdateOpportunityDto,
+    @CurrentUser() user: any,
   ): Promise<OpportunityResponseDto> {
-    return this.opportunitiesService.update(id, dto);
+    return this.opportunitiesService.update(id, dto, user);
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @Roles('admin', 'mentor', 'team_leader')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a draft opportunity' })
   @ApiResponse({ status: 204, description: 'Opportunity deleted' })
   @ApiResponse({ status: 404, description: 'Opportunity not found' })
   @ApiResponse({ status: 409, description: 'Only draft opportunities can be deleted' })
-  async remove(@Param('id', UuidValidationPipe) id: string): Promise<void> {
-    await this.opportunitiesService.remove(id);
+  async remove(@Param('id', UuidValidationPipe) id: string, @CurrentUser() user: any): Promise<void> {
+    await this.opportunitiesService.remove(id, user);
   }
 
   @Post(':id/publish')
-  @Roles('admin')
+  @Roles('admin', 'mentor', 'team_leader')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Publish a draft opportunity' })
   @ApiResponse({ status: 200, description: 'Opportunity published', type: OpportunityResponseDto })
@@ -105,12 +106,13 @@ export class OpportunitiesController {
   @ApiResponse({ status: 400, description: 'Cannot publish in current state' })
   async publish(
     @Param('id', UuidValidationPipe) id: string,
+    @CurrentUser() user: any,
   ): Promise<OpportunityResponseDto> {
-    return this.opportunitiesService.publish(id);
+    return this.opportunitiesService.publish(id, user);
   }
 
   @Post(':id/archive')
-  @Roles('admin')
+  @Roles('admin', 'mentor', 'team_leader')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Archive a published/closed opportunity' })
   @ApiResponse({ status: 200, description: 'Opportunity archived', type: OpportunityResponseDto })
@@ -118,8 +120,9 @@ export class OpportunitiesController {
   @ApiResponse({ status: 400, description: 'Cannot archive in current state' })
   async archive(
     @Param('id', UuidValidationPipe) id: string,
+    @CurrentUser() user: any,
   ): Promise<OpportunityResponseDto> {
-    return this.opportunitiesService.archive(id);
+    return this.opportunitiesService.archive(id, user);
   }
 
   @Post(':id/targets')

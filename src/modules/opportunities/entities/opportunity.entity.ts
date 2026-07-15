@@ -33,6 +33,9 @@ export class Opportunity extends BaseEntity {
   @Column({ type: 'text', default: '' })
   description: string;
 
+  @Column({ name: 'application_link', type: 'varchar', length: 2048, nullable: true })
+  applicationLink: string | null;
+
   @Column({ name: 'opportunity_type', type: 'varchar', length: 20 })
   opportunityType: OpportunityType;
 
@@ -68,6 +71,9 @@ export class Opportunity extends BaseEntity {
 
   @Column({ name: 'target_batch_id', type: 'uuid', nullable: true })
   targetBatchId: string | null;
+
+  @Column({ name: 'target_group_id', type: 'uuid', nullable: true })
+  targetGroupId: string | null;
 
   @ManyToOne(() => AcademicPeriod)
   @JoinColumn({ name: 'academic_period_id' })

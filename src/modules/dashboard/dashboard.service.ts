@@ -179,6 +179,8 @@ export class DashboardService {
             (SELECT section_id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL))
           AND (o.target_batch_id IS NULL OR o.target_batch_id IN
             (SELECT batch_id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL))
+          AND (o.target_group_id IS NULL OR o.target_group_id IN
+            (SELECT group_id FROM enrollments WHERE user_id = $1 AND deleted_at IS NULL))
         ) AS "availableOpportunities"`,
       [userId],
     );

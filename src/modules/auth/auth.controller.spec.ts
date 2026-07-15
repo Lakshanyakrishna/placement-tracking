@@ -50,6 +50,7 @@ describe('AuthController', () => {
           email: 'test@example.com',
           name: 'Test User',
           isActive: true,
+          mustChangePassword: false,
           roles: [{ role: 'admin', scopeType: 'global', scopeId: null }],
           enrollment: null,
         },

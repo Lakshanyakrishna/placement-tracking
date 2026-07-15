@@ -7,6 +7,7 @@ export class OpportunityResponseDto {
   @ApiProperty() academicPeriodId: string;
   @ApiProperty() title: string;
   @ApiProperty() description: string;
+  @ApiProperty({ nullable: true }) applicationLink: string | null;
   @ApiProperty({ enum: OpportunityType }) opportunityType: OpportunityType;
   @ApiProperty({ enum: OpportunityState }) state: OpportunityState;
   @ApiProperty() createdBy: string;
@@ -16,6 +17,7 @@ export class OpportunityResponseDto {
   @ApiProperty() requireProof: boolean;
   @ApiProperty({ nullable: true }) maxSubmissions: number | null;
   @ApiProperty() allowGroupSubmission: boolean;
+  @ApiProperty({ nullable: true }) targetGroupId: string | null;
   @ApiProperty() createdAt: Date;
   @ApiProperty() updatedAt: Date;
   @ApiProperty({ nullable: true }) targets?: TargetResponseDto[];
@@ -26,6 +28,7 @@ export class OpportunityResponseDto {
       academicPeriodId: entity.academicPeriodId,
       title: entity.title,
       description: entity.description,
+      applicationLink: entity.applicationLink,
       opportunityType: entity.opportunityType,
       state: entity.state,
       createdBy: entity.createdBy,
@@ -35,6 +38,7 @@ export class OpportunityResponseDto {
       requireProof: entity.requireProof,
       maxSubmissions: entity.maxSubmissions,
       allowGroupSubmission: entity.allowGroupSubmission,
+      targetGroupId: entity.targetGroupId,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
       targets,

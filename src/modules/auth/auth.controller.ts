@@ -24,6 +24,22 @@ import { AuthResponseDto, TokenRefreshResponseDto } from './dto/auth-response.dt
 const REFRESH_TOKEN_COOKIE = 'refresh_token';
 const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 
+// Frontend (Vercel) and backend (Railway) are deployed on different domains in
+// production, so the refresh cookie must be SameSite=None (which requires
+// Secure) to be sent on cross-site requests. Locally, both run on
+// localhost with different ports but the same site, so Lax works and avoids
+// needing HTTPS in development.
+function refreshCookieOptions(maxAge?: number) {
+  const isProduction = process.env.NODE_ENV === 'production';
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
+    path: '/api/v1/auth',
+    ...(maxAge !== undefined ? { maxAge } : {}),
+  };
+}
+
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
@@ -46,13 +62,7 @@ export class AuthController {
   ): Promise<AuthResponseDto> {
     const result = await this.authService.login(dto.email, dto.password);
 
-    res.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/api/v1/auth',
-      maxAge: REFRESH_TOKEN_MAX_AGE,
-    });
+    res.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, refreshCookieOptions(REFRESH_TOKEN_MAX_AGE));
 
     return {
       accessToken: result.accessToken,
@@ -79,13 +89,7 @@ export class AuthController {
 
     const result = await this.authService.refresh(rawToken);
 
-    res.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/api/v1/auth',
-      maxAge: REFRESH_TOKEN_MAX_AGE,
-    });
+    res.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, refreshCookieOptions(REFRESH_TOKEN_MAX_AGE));
 
     return { accessToken: result.accessToken };
   }
@@ -106,12 +110,7 @@ export class AuthController {
       await this.authService.logout(rawToken);
     }
 
-    res.clearCookie(REFRESH_TOKEN_COOKIE, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/api/v1/auth',
-    });
+    res.clearCookie(REFRESH_TOKEN_COOKIE, refreshCookieOptions());
 
     return { message: 'Logged out successfully' };
   }
