@@ -53,7 +53,7 @@ export default function PlacementsPage() {
     },
   })
 
-  const { data: availableOpps, isLoading: availableLoading } = useQuery({
+  const { data: availableOpps, isLoading: availableLoading, refetch: refetchAvailable } = useQuery({
     queryKey: ['available-opportunities'],
     queryFn: async () => {
       return await opportunitiesApi.getAvailableOpportunities()
@@ -74,6 +74,7 @@ export default function PlacementsPage() {
     try {
       await participationsApi.createParticipation({ opportunityId })
       refetch()
+      refetchAvailable()
     } catch { /* ignore */ }
   }
 
@@ -268,7 +269,7 @@ export default function PlacementsPage() {
 
                     <div className="flex gap-1.5">
                       {drive.status === 'not_started' && (
-                        <Button size="sm" className="h-7 text-xs" onClick={() => handleStart(drive.opportunityId)}>
+                        <Button size="sm" className="h-7 text-xs" onClick={() => handleContinue(drive.id)}>
                           <Play className="h-3 w-3 mr-1" />
                           Start
                         </Button>
