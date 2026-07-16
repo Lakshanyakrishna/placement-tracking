@@ -337,6 +337,11 @@ export class VerificationService {
     await this.logRepository.save(log);
 
     participation.status = ParticipationStatus.REJECTED;
+    // Also mirrored onto the submission below (submission.rejectionReason, used by
+    // the student's Submissions page) — the student's Certifications/Placements
+    // page instead reads participation.notes for its own rejection-reason display,
+    // so without this the reason would silently never appear there.
+    participation.notes = dto.reason;
     await this.participationRepository.save(participation);
 
     submission.rejectionReason = dto.reason;
