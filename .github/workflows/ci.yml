@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  # Throwaway values for CI only — never used outside ephemeral GitHub-hosted runners.
+  DB_HOST: localhost
+  DB_PORT: '5432'
+  DB_USERNAME: postgres
+  DB_PASSWORD: ci_throwaway_password
+  DB_DATABASE: placement_tracker_ci
+  DB_SSL: 'false'
+  JWT_SECRET: ci-only-throwaway-jwt-secret-do-not-use-elsewhere
+  SEED_PASSWORD: ci-only-throwaway-seed-password
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci_throwaway_password
+          POSTGRES_DB: placement_tracker_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npm run migration:run
+
+      - name: Unit tests
+        run: npx jest --silent --testPathIgnorePatterns=integration
+
+      - name: Integration tests
+        run: npx jest --silent --testPathPattern=integration
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+        working-directory: frontend
+
+      # Non-blocking: as of this workflow's introduction there are 18 pre-existing
+      # lint errors unrelated to any change here (mostly `no-explicit-any` and a
+      # couple of react-refresh/react-hooks rules, including inside shadcn/ui's own
+      # generated primitives). Still runs and reports on every PR for visibility;
+      # flip continue-on-error off once that backlog is cleared.
+      - run: npm run lint
+        working-directory: frontend
+        continue-on-error: true
+
+      # tsc (via `tsc -b && vite build`) is the frontend's only type-safety net right
+      # now — no unit tests exist yet — so a build failure here must fail CI.
+      - run: npm run build
+        working-directory: frontend
+
+  e2e:
+    needs: [backend-tests, frontend-build]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci_throwaway_password
+          POSTGRES_DB: placement_tracker_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # global-setup.ts still runs migrate+seed for standalone local runs; here it's
+      # a no-op since this job seeds explicitly below before the app even starts.
+      SKIP_GLOBAL_SETUP_SEED: 'true'
+      E2E_API_URL: http://localhost:3000/api/v1
+      E2E_BASE_URL: http://localhost:5173
+      # Deliberately NOT setting NODE_ENV/APP_ENV=production: that flips cookies to
+      # Secure/SameSite=None, which browsers refuse to send over this job's plain
+      # http://localhost — the app must run in its normal (non-production) mode here.
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npm ci
+        working-directory: frontend
+
+      - run: npm ci
+        working-directory: e2e
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: e2e
+
+      - run: npm run migration:run
+      - run: npm run seed
+
+      - name: Build and start backend
+        run: |
+          npm run build
+          nohup npm run start:prod > backend.log 2>&1 &
+        env:
+          PORT: '3000'
+
+      - name: Build and start frontend preview
+        run: |
+          npm run build
+          nohup npx vite preview --port 5173 --strictPort > ../frontend.log 2>&1 &
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: http://localhost:3000/api/v1
+
+      - name: Run E2E suite
+        run: npm test
+        working-directory: e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7
+
+      - name: Upload server logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-logs
+          path: |
+            backend.log
+            frontend.log
+          retention-days: 7

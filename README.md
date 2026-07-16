@@ -75,10 +75,27 @@ See [`.env.example`](.env.example) (and [`infrastructure/.env.example`](infrastr
 
 To bootstrap the first production admin account (instead of relying on seed data), set `ADMIN_EMAIL` and `ADMIN_PASSWORD` and run `npm run seed:admin`.
 
+## Testing
+
+Three layers — see [`docs/TESTING.md`](docs/TESTING.md) for the full breakdown:
+
+- **Backend unit/integration:** `npm test` (Jest, `src/**/*.spec.ts`)
+- **End-to-end (Playwright):** `npm run e2e` (headless), `npm run e2e:ui` (interactive debugging), `npm run e2e:report` (last HTML report) — lives in its own `e2e/` project
+- **Post-deploy smoke test:** `scripts/smoke-test.sh` — run this after every deploy (see Deployment below)
+
+CI (`.github/workflows/ci.yml`) runs all of the above except the smoke test (which needs a real deployed URL) on every push/PR to `main`.
+
 ## Deployment
 
 - **Backend (Railway/Render):** builds from `infrastructure/docker/app/Dockerfile` via the `production` target. Railway config is in [`railway.json`](railway.json) (health check at `/api/v1/health`). Set all required environment variables above in the platform's dashboard — `NODE_ENV=production` (or `APP_ENV=production`) must be set for the fail-fast secret checks and secure cookie behavior to activate.
 - **Frontend (Vercel):** config in [`frontend/vercel.json`](frontend/vercel.json). `VITE_API_BASE_URL` must be set to the deployed backend's full URL in the Vercel project's environment variables, since Vite bakes `VITE_*` variables in at build time and there's no dev-server proxy in production.
+- **After every deploy**, run the smoke test against the real URLs to confirm the API, database, and auth are actually wired up:
+
+  ```bash
+  API_URL=https://your-backend.up.railway.app/api/v1 \
+  FRONTEND_URL=https://your-frontend.vercel.app \
+  ./scripts/smoke-test.sh
+  ```
 
 ## Documentation
 
