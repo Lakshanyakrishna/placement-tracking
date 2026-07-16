@@ -9,6 +9,11 @@ export function RoleGuard({ children, allowedRoles }: { children: React.ReactNod
   if (isLoading) return <LoadingSpinner fullPage />
   if (!isAuthenticated) return <Navigate to="/login" replace />
 
+  // A user who hasn't completed their forced password change must not reach any
+  // protected route by direct URL navigation — send them back through /login,
+  // which detects mustChangePassword and renders the change-password gate itself.
+  if (user?.mustChangePassword) return <Navigate to="/login" replace />
+
   const userRoles = [...(user?.roles ?? [])]
   if (user?.isStudent) userRoles.push('student')
 
