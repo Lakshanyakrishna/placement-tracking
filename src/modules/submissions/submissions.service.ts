@@ -134,6 +134,16 @@ export class SubmissionsService {
     );
     await this.submissionFileRepository.save(submissionFiles);
 
+    // A successful upload always moves the participation into the verification
+    // queue — verification.service.ts's approve()/reject() both require status
+    // "submitted" and findPending() filters on it directly, so without this the
+    // submission would exist but could never actually be reviewed by anyone.
+    // Covers both the first submission (from in_progress) and a resubmission
+    // after rejection (from rejected) — both should land back in "submitted".
+    participation.status = ParticipationStatus.SUBMITTED;
+    participation.submittedAt = new Date();
+    await this.participationRepository.save(participation);
+
     return this.buildResponse(savedSubmission.id);
   }
 
