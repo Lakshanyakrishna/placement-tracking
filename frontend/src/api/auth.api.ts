@@ -1,4 +1,4 @@
-import client, { setAccessToken } from './client'
+import client, { setAccessToken, refreshAccessToken } from './client'
 import type { LoginRequest, LoginResponse, User } from '@/types/auth'
 
 interface RawRole {
@@ -55,9 +55,8 @@ export async function logout(): Promise<void> {
 }
 
 export async function refresh(): Promise<{ accessToken: string }> {
-  const response = await client.post<{ accessToken: string }>('/auth/refresh', {}, { _isRefresh: true } as any)
-  setAccessToken(response.data.accessToken)
-  return response.data
+  const accessToken = await refreshAccessToken()
+  return { accessToken }
 }
 
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
