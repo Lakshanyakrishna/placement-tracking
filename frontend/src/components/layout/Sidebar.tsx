@@ -40,8 +40,12 @@ export function Sidebar() {
   const visible = navItems.filter((item) => item.roles.some((r) => userRoles.includes(r)))
 
   async function handleLogout() {
-    await logout()
+    // Navigate first: this unmounts RoleGuard/the current protected page immediately,
+    // so its reactive "user became unauthenticated -> redirect to /login" logic never
+    // fires and can't race with (and win over) this explicit redirect to the landing
+    // page. Client-side navigation doesn't cancel the in-flight logout API call.
     navigate('/')
+    await logout()
   }
 
   return (
