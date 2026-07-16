@@ -68,6 +68,8 @@ export default function OpportunityCreatePage() {
       await create.mutateAsync({
         ...data,
         applicationLink: data.applicationLink || undefined,
+        opensAt: data.opensAt || undefined,
+        closesAt: data.closesAt || undefined,
         visibilityScope: isAdmin ? undefined : (data.visibilityScope as 'group' | 'section' | undefined),
       })
       navigate(ROUTES.ADMIN_OPPORTUNITIES)
