@@ -52,9 +52,9 @@ export class CreateFoundationTables1718550000000 implements MigrationInterface {
         "updated_at" timestamptz NOT NULL DEFAULT NOW(),
         "code" varchar(20) NOT NULL,
         "name" varchar(255) NOT NULL,
-        "is_active" boolean NOT NULL DEFAULT true,
         CONSTRAINT "pk_branches" PRIMARY KEY ("id"),
-        CONSTRAINT "uq_branches_code" UNIQUE ("code")
+        CONSTRAINT "uq_branches_code" UNIQUE ("code"),
+        CONSTRAINT "uq_branches_name" UNIQUE ("name")
       )`);
 
     await queryRunner.query(`CREATE INDEX "idx_branches_code" ON "branches" ("code")`);
@@ -88,14 +88,15 @@ export class CreateFoundationTables1718550000000 implements MigrationInterface {
         "updated_at" timestamptz NOT NULL DEFAULT NOW(),
         "branch_id" uuid NOT NULL,
         "academic_period_id" uuid NOT NULL,
-        "name" varchar(100) NOT NULL,
+        "code" varchar(50) NOT NULL,
         "mentor_user_id" uuid DEFAULT NULL,
-        "is_active" boolean NOT NULL DEFAULT true,
         CONSTRAINT "pk_sections" PRIMARY KEY ("id"),
         CONSTRAINT "fk_sections_branch" FOREIGN KEY ("branch_id")
           REFERENCES "branches"("id") ON DELETE CASCADE,
         CONSTRAINT "fk_sections_academic_period" FOREIGN KEY ("academic_period_id")
-          REFERENCES "academic_periods"("id") ON DELETE CASCADE
+          REFERENCES "academic_periods"("id") ON DELETE CASCADE,
+        CONSTRAINT "fk_sections_mentor" FOREIGN KEY ("mentor_user_id")
+          REFERENCES "users"("id") ON DELETE SET NULL
       )`);
 
     await queryRunner.query(`CREATE INDEX "idx_sections_branch" ON "sections" ("branch_id")`);

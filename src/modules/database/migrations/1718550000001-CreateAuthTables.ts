@@ -42,7 +42,7 @@ export class CreateAuthTables1718550000001 implements MigrationInterface {
         "token_hash" text NOT NULL,
         "expires_at" timestamptz NOT NULL,
         "revoked_at" timestamptz DEFAULT NULL,
-        "device_info" jsonb DEFAULT NULL,
+        "family" varchar(32) NOT NULL,
         CONSTRAINT "pk_refresh_tokens" PRIMARY KEY ("id"),
         CONSTRAINT "ck_refresh_tokens_expiry" CHECK ("expires_at" > "created_at"),
         CONSTRAINT "fk_refresh_tokens_user" FOREIGN KEY ("user_id")
@@ -52,6 +52,7 @@ export class CreateAuthTables1718550000001 implements MigrationInterface {
     await queryRunner.query(`CREATE INDEX "idx_refresh_tokens_user" ON "refresh_tokens" ("user_id")`);
     await queryRunner.query(`CREATE INDEX "idx_refresh_tokens_expires" ON "refresh_tokens" ("expires_at")`);
     await queryRunner.query(`CREATE INDEX "idx_refresh_tokens_revoked" ON "refresh_tokens" ("revoked_at")`);
+    await queryRunner.query(`CREATE INDEX "idx_refresh_tokens_hash" ON "refresh_tokens" ("token_hash")`);
 
     // ---- password_reset_tokens ----
     await queryRunner.query(`
