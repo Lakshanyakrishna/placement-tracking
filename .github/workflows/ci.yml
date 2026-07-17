@@ -46,6 +46,29 @@ jobs:
 
       - run: npm run migration:run
 
+      # Fails the build if an entity was changed without updating the migration that
+      # creates its table — catches the class of bug where `npm run seed`/the app
+      # 42703s on a fresh (never-deployed-to) database. Only checks for missing/wrong
+      # *columns*. Two categories are intentionally NOT flagged:
+      #   - FK/index-naming-convention differences: this project hand-names its
+      #     constraints (fk_*/idx_*/uq_*); TypeORM would rather use its own
+      #     auto-generated names, which schema:log reports as DROP+ADD CONSTRAINT/
+      #     FOREIGN KEY pairs — not real drift, so those lines are filtered out. This
+      #     means the guard is blind to genuine FK drift (e.g. a missing foreign key)
+      #     by design, not by oversight — it only covers plain columns.
+      #   - Enum-vs-varchar representation: this schema creates native Postgres ENUM
+      #     types via raw SQL, but TypeORM's own schema comparison always prefers to
+      #     represent them as varchar — every enum column reports as a spurious
+      #     DROP+ADD pair. These are excluded by column name below; if a new enum
+      #     column is added, add its name to this list rather than disabling the check.
+      - name: Check schema drift
+        run: |
+          npx typeorm-ts-node-commonjs schema:log -d src/modules/database/data-source.ts \
+            | grep -E 'ADD "|DROP COLUMN|RENAME COLUMN' | grep -vE 'CONSTRAINT|FOREIGN' \
+            | grep -vE '"(type|opportunity_type|state|status|action|channel|delivery_status|role|scope_type)"' \
+            | tee /tmp/drift.txt
+          if [ -s /tmp/drift.txt ]; then echo "::error::Entities and migrations have drifted"; exit 1; fi
+
       - name: Unit tests
         run: npx jest --silent --testPathIgnorePatterns=integration
 
