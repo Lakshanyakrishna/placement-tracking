@@ -158,7 +158,6 @@ async function seed() {
   const branchId = await insertRow(ds, 'branches', {
     code: 'AI&DS',
     name: 'Artificial Intelligence & Data Science',
-    is_active: true,
   });
   ok('branch AI&DS');
 
@@ -178,7 +177,6 @@ async function seed() {
     academic_period_id: acPeriodId,
     code: 'IV-AI&DS-A',
     mentor_user_id: mentorId,
-    is_active: true,
   });
   ok('section IV-AI&DS-A');
 
