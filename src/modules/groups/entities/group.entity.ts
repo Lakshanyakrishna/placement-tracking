@@ -22,6 +22,6 @@ export class Group extends BaseEntity {
   @JoinColumn({ name: 'team_leader_user_id' })
   teamLeader: User;
 
-  @DeleteDateColumn({ name: 'deleted_at' })
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz' })
   deletedAt: Date | null;
 }

@@ -9,6 +9,6 @@ export class Branch extends BaseEntity {
   @Column({ length: 255, unique: true })
   name: string;
 
-  @DeleteDateColumn({ name: 'deleted_at' })
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz' })
   deletedAt: Date | null;
 }

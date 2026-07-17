@@ -61,6 +61,6 @@ export class Enrollment extends BaseEntity {
   @JoinColumn({ name: 'batch_id' })
   batch: Batch;
 
-  @DeleteDateColumn({ name: 'deleted_at' })
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz' })
   deletedAt: Date | null;
 }

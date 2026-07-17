@@ -83,6 +83,6 @@ export class Opportunity extends BaseEntity {
   @JoinColumn({ name: 'created_by' })
   createdByUser: User;
 
-  @DeleteDateColumn({ name: 'deleted_at' })
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz' })
   deletedAt: Date | null;
 }

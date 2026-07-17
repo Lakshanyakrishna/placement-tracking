@@ -31,6 +31,6 @@ export class Section extends BaseEntity {
   @JoinColumn({ name: 'mentor_user_id' })
   mentor: User;
 
-  @DeleteDateColumn({ name: 'deleted_at' })
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz' })
   deletedAt: Date | null;
 }
