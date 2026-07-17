@@ -49,15 +49,18 @@ export class CreateOpportunityTables1718550000002 implements MigrationInterface 
         "id" uuid NOT NULL DEFAULT gen_random_uuid(),
         "created_at" timestamptz NOT NULL DEFAULT NOW(),
         "updated_at" timestamptz NOT NULL DEFAULT NOW(),
-        "original_name" varchar(255) NOT NULL,
+        "originalFilename" varchar(255) NOT NULL,
         "mime_type" varchar(127) NOT NULL,
-        "size_bytes" integer NOT NULL,
-        "storage_key" text NOT NULL,
+        "size_bytes" bigint NOT NULL,
+        "key" text NOT NULL,
         "bucket" varchar(255) NOT NULL,
-        CONSTRAINT "pk_file_references" PRIMARY KEY ("id")
+        "uploaded_by" uuid NOT NULL,
+        CONSTRAINT "pk_file_references" PRIMARY KEY ("id"),
+        CONSTRAINT "fk_file_references_uploaded_by" FOREIGN KEY ("uploaded_by")
+          REFERENCES "users"("id")
       )`);
 
-    await queryRunner.query(`CREATE INDEX "idx_file_references_storage_key" ON "file_references" ("storage_key")`);
+    await queryRunner.query(`CREATE INDEX "idx_file_references_key" ON "file_references" ("key")`);
 
     // ---- participations ----
     await queryRunner.query(`
