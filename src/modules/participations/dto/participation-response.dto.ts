@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Participation, ParticipationStatus } from '../entities/participation.entity';
+import { RoundResponseDto } from '../../opportunities/dto/round-response.dto';
 
 export class ParticipationResponseDto {
   @ApiProperty() id: string;
@@ -16,12 +17,14 @@ export class ParticipationResponseDto {
   @ApiProperty() updatedAt: Date;
   @ApiPropertyOptional() opportunityTitle?: string;
   @ApiPropertyOptional() opportunityType?: string;
+  @ApiPropertyOptional({ nullable: true }) opportunityMeetingLink?: string | null;
+  @ApiPropertyOptional({ type: [RoundResponseDto] }) opportunityRounds?: RoundResponseDto[];
   @ApiPropertyOptional() enrollmentUserId?: string;
   @ApiPropertyOptional() enrollmentRollNumber?: string | null;
   @ApiPropertyOptional() userName?: string;
   @ApiPropertyOptional() userEmail?: string;
 
-  static fromEntity(entity: Participation): ParticipationResponseDto {
+  static fromEntity(entity: Participation, rounds?: RoundResponseDto[]): ParticipationResponseDto {
     return {
       id: entity.id,
       opportunityId: entity.opportunityId,
@@ -37,6 +40,8 @@ export class ParticipationResponseDto {
       updatedAt: entity.updatedAt,
       opportunityTitle: (entity as any).opportunity?.title,
       opportunityType: (entity as any).opportunity?.opportunityType,
+      opportunityMeetingLink: (entity as any).opportunity?.meetingLink,
+      opportunityRounds: rounds,
       enrollmentUserId: (entity as any).enrollment?.userId,
       enrollmentRollNumber: (entity as any).enrollment?.rollNumber,
       userName: (entity as any).enrollment?.user?.name,

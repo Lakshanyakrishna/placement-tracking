@@ -4,6 +4,8 @@ import { Repository, In } from 'typeorm';
 import { Participation, ParticipationStatus } from './entities/participation.entity';
 import { Enrollment } from '../enrollments/entities/enrollment.entity';
 import { Opportunity, OpportunityState } from '../opportunities/entities/opportunity.entity';
+import { OpportunityRound } from '../opportunities/entities/opportunity-round.entity';
+import { RoundResponseDto } from '../opportunities/dto/round-response.dto';
 import { Group } from '../groups/entities/group.entity';
 import { PaginationQueryDto, PaginationMetaDto, createPaginationMeta, parseSort } from '../../common/dto/pagination.dto';
 import { CreateParticipationDto } from './dto/create-participation.dto';
@@ -34,8 +36,28 @@ export class ParticipationsService {
     private readonly opportunityRepository: Repository<Opportunity>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
+    @InjectRepository(OpportunityRound)
+    private readonly roundRepository: Repository<OpportunityRound>,
     private readonly iamService: IamService,
   ) {}
+
+  private async roundsByOpportunityId(opportunityIds: string[]): Promise<Map<string, RoundResponseDto[]>> {
+    const uniqueIds = [...new Set(opportunityIds)];
+    if (uniqueIds.length === 0) return new Map();
+
+    const rounds = await this.roundRepository.find({
+      where: { opportunityId: In(uniqueIds) },
+      order: { sequence: 'ASC' },
+    });
+
+    const map = new Map<string, RoundResponseDto[]>();
+    for (const round of rounds) {
+      const list = map.get(round.opportunityId) ?? [];
+      list.push(RoundResponseDto.fromEntity(round));
+      map.set(round.opportunityId, list);
+    }
+    return map;
+  }
 
   async create(dto: CreateParticipationDto, userId: string): Promise<ParticipationResponseDto> {
     const opportunity = await this.opportunityRepository.findOneBy({ id: dto.opportunityId });
@@ -118,8 +140,10 @@ export class ParticipationsService {
       relations: ['opportunity', 'enrollment', 'enrollment.user'],
     });
 
+    const roundsMap = await this.roundsByOpportunityId(entities.map((e) => e.opportunityId));
+
     return {
-      data: entities.map(ParticipationResponseDto.fromEntity),
+      data: entities.map((e) => ParticipationResponseDto.fromEntity(e, roundsMap.get(e.opportunityId))),
       meta: createPaginationMeta(total, query),
     };
   }
@@ -212,7 +236,7 @@ export class ParticipationsService {
     });
 
     return {
-      data: entities.map(ParticipationResponseDto.fromEntity),
+      data: entities.map((e) => ParticipationResponseDto.fromEntity(e)),
       meta: createPaginationMeta(total, query),
     };
   }
@@ -328,7 +352,7 @@ export class ParticipationsService {
     });
 
     return {
-      data: entities.map(ParticipationResponseDto.fromEntity),
+      data: entities.map((e) => ParticipationResponseDto.fromEntity(e)),
       meta: createPaginationMeta(total, query),
     };
   }
@@ -371,7 +395,7 @@ export class ParticipationsService {
     });
 
     return {
-      data: entities.map(ParticipationResponseDto.fromEntity),
+      data: entities.map((e) => ParticipationResponseDto.fromEntity(e)),
       meta: createPaginationMeta(total, query),
     };
   }
@@ -419,7 +443,7 @@ export class ParticipationsService {
     });
 
     return {
-      data: entities.map(ParticipationResponseDto.fromEntity),
+      data: entities.map((e) => ParticipationResponseDto.fromEntity(e)),
       meta: createPaginationMeta(total, query),
     };
   }
