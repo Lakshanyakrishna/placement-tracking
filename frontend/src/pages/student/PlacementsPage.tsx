@@ -10,6 +10,8 @@ import * as submissionsApi from '@/api/submissions.api'
 import * as opportunitiesApi from '@/api/opportunities.api'
 import { Briefcase, Eye, Upload, Play, Sparkles, XCircle, ExternalLink } from 'lucide-react'
 import { isPlacementType } from '@/lib/constants'
+import { CareerPathTrail } from '@/components/dashboard/CareerPathTrail'
+import { VerificationSeal } from '@/components/dashboard/VerificationSeal'
 
 type StatusFilter = 'all' | 'available' | 'not_started' | 'in_progress' | 'submitted' | 'verified' | 'completed' | 'rejected'
 
@@ -242,14 +244,20 @@ export default function PlacementsPage() {
               return (
                 <Card key={drive.id} className={`hover:shadow-md transition-shadow ${drive.status === 'rejected' ? 'border-red-200' : ''}`}>
                   <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="flex items-start justify-between gap-2 mb-2">
                       <p className="text-sm font-medium text-[#111827]">
                         {drive.opportunity?.title ?? drive.opportunityTitle ?? 'Unknown'}
                       </p>
-                      <span className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-medium ${statusColor(drive.status)}`}>
-                        {drive.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </span>
+                      {drive.status === 'verified' || drive.status === 'completed' ? (
+                        <VerificationSeal label={drive.status === 'completed' ? 'Completed' : 'Verified'} />
+                      ) : (
+                        <span className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-medium ${statusColor(drive.status)}`}>
+                          {drive.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </span>
+                      )}
                     </div>
+
+                    <CareerPathTrail status={drive.status} className="mb-3" />
 
                     {urgency && (
                       <p className={`text-xs font-medium mb-1 ${urgency.className}`}>{urgency.label}</p>
