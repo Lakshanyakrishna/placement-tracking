@@ -17,6 +17,7 @@ export interface MentorDashboard {
   verified: number
   rejected: number
   completionRate: number
+  followUpQueue: FollowUpItem[]
 }
 
 export interface TeamLeaderDashboard {
@@ -101,6 +102,13 @@ export interface GroupRankingEntry {
   rank: number
 }
 
+export interface GroupParticipationDetail {
+  studentName: string
+  rollNumber: string
+  opportunityTitle: string
+  status: string
+}
+
 export interface AdminDashboardData {
   summary: {
     totalStudents: number
@@ -115,4 +123,5 @@ export interface AdminDashboardData {
   certHeatmap: { oppTitle: string; groups: Record<string, CertHeatmapCell> }[]
   atRiskStudents: AtRiskStudent[]
   followUpQueue: FollowUpItem[]
+  groupDetails: Record<string, GroupParticipationDetail[]>
 }

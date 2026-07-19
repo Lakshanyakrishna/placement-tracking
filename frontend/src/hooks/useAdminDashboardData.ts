@@ -12,6 +12,7 @@ import type {
   AtRiskStudent,
   FollowUpItem,
   GroupRankingEntry,
+  GroupParticipationDetail,
 } from '@/types/dashboard'
 import type { Participation } from '@/types/participation'
 
@@ -212,6 +213,21 @@ export function useAdminDashboardData() {
 
       const pendingFollowUps = followUpQueue.length
 
+      // ── Group Drill-Down Detail — student-level rows behind each Group
+      // Performance bar, for click-to-drill-down. ──
+      const groupDetails: Record<string, GroupParticipationDetail[]> = {}
+      for (const gd of groupData) {
+        groupDetails[gd.groupId] = gd.participations.map((p) => {
+          const student = sectionStudents.find((s) => s.id === (p as any).enrollmentUserId)
+          return {
+            studentName: p.userName ?? 'Unknown',
+            rollNumber: student?.rollNumber ?? (p as any).enrollmentRollNumber ?? '—',
+            opportunityTitle: p.opportunity?.title ?? p.opportunityTitle ?? '—',
+            status: p.status,
+          }
+        })
+      }
+
       return {
         summary: {
           totalStudents: dashboard.totalStudents,
@@ -226,6 +242,7 @@ export function useAdminDashboardData() {
         certHeatmap,
         atRiskStudents,
         followUpQueue,
+        groupDetails,
       }
     },
   })

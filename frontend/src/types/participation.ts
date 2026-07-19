@@ -1,3 +1,5 @@
+import type { OpportunityRound } from './opportunity'
+
 export interface Participation {
   id: string
   opportunityId: string
@@ -15,6 +17,8 @@ export interface Participation {
   updatedAt?: string
   opportunityTitle?: string
   opportunityType?: string
+  opportunityMeetingLink?: string | null
+  opportunityRounds?: OpportunityRound[]
   enrollmentUserId?: string
   enrollmentRollNumber?: string | null
   userName?: string

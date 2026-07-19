@@ -10,6 +10,15 @@ interface CertHeatmapProps {
   groupNames: string[]
 }
 
+const LEGEND: { label: string; className: string }[] = [
+  { label: '0%', className: 'bg-gray-100' },
+  { label: '1–19%', className: 'bg-red-100' },
+  { label: '20–39%', className: 'bg-orange-200' },
+  { label: '40–59%', className: 'bg-yellow-300' },
+  { label: '60–79%', className: 'bg-green-400' },
+  { label: '80–100%', className: 'bg-green-600' },
+]
+
 function heatColor(pct: number): string {
   if (pct >= 80) return 'bg-green-600 text-white'
   if (pct >= 60) return 'bg-green-400 text-white'
@@ -19,11 +28,30 @@ function heatColor(pct: number): string {
   return 'bg-gray-100 text-muted-foreground'
 }
 
+function Header() {
+  return (
+    <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h2 className="text-sm font-semibold text-[#111827]">Certification Completion Heatmap</h2>
+        <p className="text-xs text-muted-foreground">Each cell is shaded by that group's completion rate for that certification (verified + completed ÷ assigned)</p>
+      </div>
+      <div className="flex items-center gap-2">
+        {LEGEND.map((l) => (
+          <div key={l.label} className="flex items-center gap-1">
+            <span className={`h-2.5 w-2.5 rounded-sm ${l.className}`} />
+            <span className="text-[10px] text-muted-foreground">{l.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function CertHeatmap({ rows, groupNames }: CertHeatmapProps) {
   if (rows.length === 0) {
     return (
       <div>
-        <h2 className="text-lg font-semibold mb-3">Certification Heatmap</h2>
+        <Header />
         <p className="text-sm text-muted-foreground">No certification data available</p>
       </div>
     )
@@ -31,7 +59,7 @@ export function CertHeatmap({ rows, groupNames }: CertHeatmapProps) {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-3">Certification Heatmap</h2>
+      <Header />
       <div className="rounded-md border overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
