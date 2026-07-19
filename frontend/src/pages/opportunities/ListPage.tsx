@@ -8,7 +8,7 @@ import { ErrorState } from '@/components/shared/ErrorState'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ROUTES, OPPORTUNITY_STATES, isPlacementType } from '@/lib/constants'
-import { Plus, Send, Archive, Trash2, Pencil } from 'lucide-react'
+import { Plus, Send, Archive, Trash2, Pencil, Users } from 'lucide-react'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import type { Opportunity } from '@/types/opportunity'
 
@@ -113,9 +113,19 @@ export default function OpportunityListPage() {
               </>
             )}
             {(row.state === OPPORTUNITY_STATES.PUBLISHED || row.state === OPPORTUNITY_STATES.OPEN || row.state === OPPORTUNITY_STATES.CLOSED) && (
-              <Button size="sm" variant="ghost" title="Archive" onClick={() => handleArchive(row.id)} disabled={archive.isPending}>
-                <Archive className="h-4 w-4" />
-              </Button>
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  title="View registrations"
+                  onClick={() => navigate(ROUTES.ADMIN_OPPORTUNITIES_ANALYTICS(row.id))}
+                >
+                  <Users className="h-4 w-4" />
+                </Button>
+                <Button size="sm" variant="ghost" title="Archive" onClick={() => handleArchive(row.id)} disabled={archive.isPending}>
+                  <Archive className="h-4 w-4" />
+                </Button>
+              </>
             )}
           </div>
         ) : null

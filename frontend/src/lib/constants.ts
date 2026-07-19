@@ -40,6 +40,7 @@ export const ROUTES = {
   ADMIN_OPPORTUNITIES: '/admin/opportunities',
   ADMIN_OPPORTUNITIES_NEW: '/admin/opportunities/new',
   ADMIN_OPPORTUNITIES_EDIT: (id: string) => `/admin/opportunities/${id}/edit`,
+  ADMIN_OPPORTUNITIES_ANALYTICS: (id: string) => `/admin/opportunities/${id}/analytics`,
   ADMIN_STUDENTS: '/admin/students',
   ADMIN_VERIFICATIONS: '/admin/verifications',
   ADMIN_REPORTS: '/admin/reports',
