@@ -15,6 +15,7 @@ import LandingPage from '@/pages/LandingPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 
 const HelpPage = lazy(() => import('@/pages/HelpPage'))
+const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'))
 const AdminDashboardPage = lazy(() => import('@/pages/admin/DashboardPage'))
 const DashboardHubPage = lazy(() => import('@/pages/dashboard/HubPage'))
 const MentorDashboardPage = lazy(() => import('@/pages/mentor/DashboardPage'))
@@ -50,6 +51,12 @@ export const router = createBrowserRouter([
   {
     path: 'help',
     element: withSuspense(<HelpPage />),
+  },
+  {
+    // Matches the link emailed by POST /auth/forgot-password (see
+    // auth.service.ts's forgotPassword — baseUrl + this exact path + ?token=).
+    path: 'auth/reset-password',
+    element: withSuspense(<ResetPasswordPage />),
   },
   {
     element: <AppShell />,
