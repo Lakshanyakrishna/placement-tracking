@@ -16,6 +16,7 @@ import NotFoundPage from '@/pages/NotFoundPage'
 
 const HelpPage = lazy(() => import('@/pages/HelpPage'))
 const AdminDashboardPage = lazy(() => import('@/pages/admin/DashboardPage'))
+const DashboardHubPage = lazy(() => import('@/pages/dashboard/HubPage'))
 const MentorDashboardPage = lazy(() => import('@/pages/mentor/DashboardPage'))
 const TeamLeaderDashboardPage = lazy(() => import('@/pages/team-leader/DashboardPage'))
 const StudentDashboardPage = lazy(() => import('@/pages/student/DashboardPage'))
@@ -114,6 +115,18 @@ export const router = createBrowserRouter([
         element: withSuspense(
           <RoleGuard allowedRoles={[ROLES.ADMIN]}>
             <ReportsListPage />
+          </RoleGuard>,
+        ),
+      },
+      {
+        // Landing spot for anyone with mentor and/or team_leader role — since
+        // the same person can hold both, this shows a small preview tile per
+        // role they actually have instead of forcing them through two separate
+        // full dashboards. See ROLE_DASHBOARD_MAP / Sidebar.tsx.
+        path: 'dashboard',
+        element: withSuspense(
+          <RoleGuard allowedRoles={[ROLES.MENTOR, ROLES.TEAM_LEADER]}>
+            <DashboardHubPage />
           </RoleGuard>,
         ),
       },
