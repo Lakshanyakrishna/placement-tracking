@@ -1,4 +1,5 @@
-import { motion } from 'framer-motion'
+import { useRef } from 'react'
+import { motion, useMotionValue, useSpring, useReducedMotion } from 'framer-motion'
 import { Check, ArrowRight } from 'lucide-react'
 
 interface BridgeSceneProps {
@@ -108,7 +109,7 @@ export function BridgeScene({ revealed, onToggle }: BridgeSceneProps) {
           <motion.div
             initial={false}
             animate={{ clipPath: revealed ? 'inset(0 0% 0 0)' : 'inset(0 100% 0 0)' }}
-            transition={{ duration: 0.9, ease: 'easeInOut' }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
             className="relative h-full w-full"
           >
             <div
@@ -190,18 +191,12 @@ export function BridgeScene({ revealed, onToggle }: BridgeSceneProps) {
           Companies
         </span>
 
-        {/* reveal / hide toggle */}
-        <motion.button
-          onClick={onToggle}
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.95 }}
-          aria-label={revealed ? 'Hide the login form' : 'Build the bridge to sign in'}
-          className="absolute left-1/2 top-[4%] flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full border border-stmary-primary/30 bg-white text-stmary-primary shadow-md"
-          animate={{ rotate: revealed ? 180 : 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <ArrowRight className="h-5 w-5" />
-        </motion.button>
+        {/* reveal / hide toggle — the single focal interactive element on this
+            screen, so it gets the "complex tier" treatment: a magnetic pull
+            toward the cursor on desktop hover, plus an idle breathing ring
+            while collapsed so it reads as clickable before the user has
+            touched anything. Both respect prefers-reduced-motion. */}
+        <BridgeToggleButton revealed={revealed} onToggle={onToggle} />
       </div>
 
       {/* idle-only CTA — a real, clearly-labeled button, not just a decorative hint.
@@ -235,6 +230,73 @@ export function BridgeScene({ revealed, onToggle }: BridgeSceneProps) {
           </div>
         ))}
       </motion.div>
+    </div>
+  )
+}
+
+interface BridgeToggleButtonProps {
+  revealed: boolean
+  onToggle: () => void
+}
+
+function BridgeToggleButton({ revealed, onToggle }: BridgeToggleButtonProps) {
+  const prefersReducedMotion = useReducedMotion()
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  // Magnetic pull: reserved for exactly this one focal element per the skill's
+  // own "don't apply to more than 1-2 elements per screen" guidance. Springs
+  // (not raw values) keep it feeling elastic rather than glued to the cursor;
+  // the *0.3 factor and mouseleave reset keep it clamped inside its hit box.
+  const x = useMotionValue(0)
+  const y = useMotionValue(0)
+  const springX = useSpring(x, { stiffness: 150, damping: 15, mass: 0.5 })
+  const springY = useSpring(y, { stiffness: 150, damping: 15, mass: 0.5 })
+
+  function handleMouseMove(e: React.MouseEvent<HTMLButtonElement>) {
+    if (prefersReducedMotion) return
+    const rect = buttonRef.current?.getBoundingClientRect()
+    if (!rect) return
+    x.set((e.clientX - rect.left - rect.width / 2) * 0.3)
+    y.set((e.clientY - rect.top - rect.height / 2) * 0.3)
+  }
+
+  function handleMouseLeave() {
+    x.set(0)
+    y.set(0)
+  }
+
+  function handleClick() {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(10)
+    onToggle()
+  }
+
+  return (
+    <div className="absolute left-1/2 top-[4%] -translate-x-1/2">
+      {/* idle breathing ring — only while collapsed, hints this is clickable
+          before the user has touched anything. Off entirely for reduced motion. */}
+      {!revealed && !prefersReducedMotion && (
+        <motion.span
+          aria-hidden="true"
+          className="absolute inset-0 rounded-full border-2 border-stmary-primary/40"
+          animate={{ scale: [1, 1.35, 1], opacity: [0.6, 0, 0.6] }}
+          transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      )}
+      <motion.button
+        ref={buttonRef}
+        onClick={handleClick}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.95 }}
+        aria-label={revealed ? 'Hide the login form' : 'Build the bridge to sign in'}
+        className="relative flex h-11 w-11 items-center justify-center rounded-full border border-stmary-primary/30 bg-white text-stmary-primary shadow-md"
+        style={{ x: springX, y: springY }}
+        animate={{ rotate: revealed ? 180 : 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <ArrowRight className="h-5 w-5" />
+      </motion.button>
     </div>
   )
 }

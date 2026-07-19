@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import { BridgeScene } from './BridgeScene'
@@ -11,6 +11,19 @@ interface LoginScreenProps {
 
 export function LoginScreen({ onSubmit, onClose }: LoginScreenProps) {
   const [revealed, setRevealed] = useState(false)
+  const mobileFormRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // Below `lg` the login form isn't a side panel — it's stacked below the
+    // full-height bridge illustration, so revealing it can leave it entirely
+    // below the fold with no visual cue. Auto-scroll it into view so the
+    // "reward" for building the bridge doesn't look like nothing happened.
+    if (!revealed || !mobileFormRef.current) return
+    const timeout = setTimeout(() => {
+      mobileFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 550)
+    return () => clearTimeout(timeout)
+  }, [revealed])
 
   return (
     <div className="relative h-full overflow-y-auto overflow-x-hidden bg-[#e4e9ee]">
@@ -51,6 +64,7 @@ export function LoginScreen({ onSubmit, onClose }: LoginScreenProps) {
       <AnimatePresence>
         {revealed && (
           <motion.div
+            ref={mobileFormRef}
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 30 }}
