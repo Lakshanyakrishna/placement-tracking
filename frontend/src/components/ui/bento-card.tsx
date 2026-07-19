@@ -12,7 +12,7 @@ export function BentoCard({ children, className, colSpan = 1, rowSpan = 1 }: Ben
   return (
     <div
       className={cn(
-        'rounded-xl border bg-card p-5 shadow-sm',
+        'rounded-xl border bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-stmary-primary/20',
         colSpan === 2 && 'sm:col-span-2',
         colSpan === 3 && 'sm:col-span-3',
         colSpan === 4 && 'sm:col-span-4',
