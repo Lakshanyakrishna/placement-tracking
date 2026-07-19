@@ -45,6 +45,7 @@ export default function PlacementsPage() {
   const [uploading, setUploading] = useState<string | null>(null)
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [viewingId, setViewingId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { data: parts, isLoading, error, refetch } = useQuery({
@@ -114,6 +115,33 @@ export default function PlacementsPage() {
     } finally {
       setUploading(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  async function handleViewSubmission(participationId: string) {
+    setViewingId(participationId)
+    setUploadError(null)
+    try {
+      const subs = await submissionsApi.getSubmissionsByParticipation(participationId)
+      const latest = [...subs].sort(
+        (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
+      )[0]
+      const file = latest?.files?.[0]
+      if (!file) {
+        setUploadError('No file was found for this submission.')
+        return
+      }
+      const blob = await submissionsApi.downloadFile(file.id)
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = file.originalFilename
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch {
+      setUploadError('Could not open the submitted file. Try again.')
+    } finally {
+      setViewingId(null)
     }
   }
 
@@ -294,15 +322,27 @@ export default function PlacementsPage() {
                         </>
                       )}
                       {drive.status === 'submitted' && (
-                        <Button size="sm" variant="outline" className="h-7 text-xs">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          onClick={() => handleViewSubmission(drive.id)}
+                          disabled={viewingId === drive.id}
+                        >
                           <Eye className="h-3 w-3 mr-1" />
-                          View Submission
+                          {viewingId === drive.id ? 'Opening...' : 'View Submission'}
                         </Button>
                       )}
                       {(drive.status === 'verified' || drive.status === 'completed') && (
-                        <Button size="sm" variant="outline" className="h-7 text-xs">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          onClick={() => handleViewSubmission(drive.id)}
+                          disabled={viewingId === drive.id}
+                        >
                           <Eye className="h-3 w-3 mr-1" />
-                          View Offer Letter
+                          {viewingId === drive.id ? 'Opening...' : 'View Offer Letter'}
                         </Button>
                       )}
                       {drive.status === 'rejected' && (
