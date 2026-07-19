@@ -1,6 +1,17 @@
 @import "tailwindcss";
+@import "@fontsource-variable/outfit";
+@import "tw-animate-css";
 
 :root {
+  /* St. Mary's Group of Institutions brand colors — extracted from the
+     college's own site (stmarysgroup.com): #b82020 matches their .btn-primary
+     CSS rule exactly, and #ffd200 was pixel-sampled from the gold ring in their
+     official crest. Namespaced (not the app-wide --primary/--accent above) so
+     the landing page can carry the real institutional brand without changing
+     the rest of the authenticated app's theme. */
+  --stmary-primary: #b82020;
+  --stmary-primary-dark: #8f1919;
+  --stmary-accent: #ffd200;
   --background: #FAFAFA;
   --foreground: #111827;
   --card: #FFFFFF;
@@ -63,6 +74,10 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --color-stmary-primary: var(--stmary-primary);
+  --color-stmary-primary-dark: var(--stmary-primary-dark);
+  --color-stmary-accent: var(--stmary-accent);
+  --font-stmary: 'Outfit Variable', system-ui, sans-serif;
 }
 
 @layer base {
@@ -72,5 +87,42 @@
   body {
     @apply bg-background text-foreground;
     font-family: "Inter", system-ui, -apple-system, sans-serif;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out both;
+}
+
+.animate-fade-in-scale {
+  animation: fade-in-scale 0.7s ease-out 0.15s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up,
+  .animate-fade-in-scale {
+    animation: none;
   }
 }
