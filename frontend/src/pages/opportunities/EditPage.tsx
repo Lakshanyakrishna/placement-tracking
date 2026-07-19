@@ -1,10 +1,11 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useEffect, useState } from 'react'
 import { useOpportunity, useUpdateOpportunity } from '@/hooks/useOpportunities'
 import { useAuth } from '@/contexts/AuthContext'
+import * as opportunitiesApi from '@/api/opportunities.api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -13,8 +14,15 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { ErrorState } from '@/components/shared/ErrorState'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Plus, X } from 'lucide-react'
 import { ROUTES } from '@/lib/constants'
+
+const roundSchema = z.object({
+  title: z.string().min(1, 'Round title is required').max(255),
+  link: z.string().trim().url('Enter a valid URL (e.g. https://...)').optional().or(z.literal('')),
+  scheduledAt: z.string().optional(),
+  notes: z.string().optional(),
+})
 
 const schema = z.object({
   title: z.string().min(1, 'Title is required').max(255),
@@ -24,6 +32,7 @@ const schema = z.object({
   opportunityType: z.string().min(1, 'Type is required'),
   opensAt: z.string().optional(),
   closesAt: z.string().optional(),
+  rounds: z.array(roundSchema).optional(),
 })
 
 type FormData = z.infer<typeof schema>
@@ -36,9 +45,10 @@ export default function OpportunityEditPage() {
   const { data: opportunity, isLoading, error, refetch } = useOpportunity(id!)
   const update = useUpdateOpportunity()
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const { register, handleSubmit, setValue, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, reset, control, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
+  const { fields: roundFields, append: appendRound, remove: removeRound } = useFieldArray({ control, name: 'rounds' })
 
   useEffect(() => {
     if (opportunity) {
@@ -50,6 +60,12 @@ export default function OpportunityEditPage() {
         opportunityType: opportunity.opportunityType,
         opensAt: opportunity.opensAt ? opportunity.opensAt.slice(0, 16) : '',
         closesAt: opportunity.closesAt ? opportunity.closesAt.slice(0, 16) : '',
+        rounds: (opportunity.rounds ?? []).map((r) => ({
+          title: r.title,
+          link: r.link || '',
+          scheduledAt: r.scheduledAt ? r.scheduledAt.slice(0, 16) : '',
+          notes: r.notes || '',
+        })),
       })
     }
   }, [opportunity, reset])
@@ -70,6 +86,16 @@ export default function OpportunityEditPage() {
           closesAt: data.closesAt || undefined,
         },
       })
+      const rounds = (data.rounds ?? []).filter((r) => r.title.trim())
+      await opportunitiesApi.setOpportunityRounds(
+        id!,
+        rounds.map((r) => ({
+          title: r.title,
+          link: r.link || undefined,
+          scheduledAt: r.scheduledAt || undefined,
+          notes: r.notes || undefined,
+        })),
+      )
       navigate(ROUTES.ADMIN_OPPORTUNITIES)
     } catch (e) {
       const err = e as { response?: { data?: { details?: Array<{ message: string }>; message?: string } } }
@@ -137,6 +163,54 @@ export default function OpportunityEditPage() {
               <Input id="meetingLink" type="url" placeholder="https://zoom.us/j/1234567890" {...register('meetingLink')} />
               <p className="text-xs text-muted-foreground">Optional. A Zoom/meeting link or an assessment/test link, shown to students once published.</p>
               {errors.meetingLink && <p className="text-xs text-destructive">{errors.meetingLink.message}</p>}
+            </div>
+            <div className="space-y-3 rounded-lg border p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Rounds</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Optional. For multi-stage drives — e.g. Round 1: Online Assessment, Round 2: Technical Interview, Round 3: HR Round — each with its own link and schedule.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => appendRound({ title: `Round ${roundFields.length + 1}`, link: '', scheduledAt: '', notes: '' })}
+                >
+                  <Plus className="mr-1 h-3.5 w-3.5" />
+                  Add Round
+                </Button>
+              </div>
+              {roundFields.map((field, index) => (
+                <div key={field.id} className="space-y-2 rounded-md border bg-muted/30 p-3">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1 space-y-2">
+                      <Input placeholder="Round title (e.g. Round 1: Online Assessment)" {...register(`rounds.${index}.title` as const)} />
+                      {errors.rounds?.[index]?.title && (
+                        <p className="text-xs text-destructive">{errors.rounds[index]?.title?.message}</p>
+                      )}
+                      <Input type="url" placeholder="Link (optional, e.g. https://zoom.us/j/...)" {...register(`rounds.${index}.link` as const)} />
+                      {errors.rounds?.[index]?.link && (
+                        <p className="text-xs text-destructive">{errors.rounds[index]?.link?.message}</p>
+                      )}
+                      <Input type="datetime-local" {...register(`rounds.${index}.scheduledAt` as const)} />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => removeRound(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {roundFields.length === 0 && (
+                <p className="text-xs text-muted-foreground">No rounds added — this opportunity will use the single links above only.</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
