@@ -6,9 +6,10 @@ test.describe('Login and forced password change (starts logged out)', () => {
   test.use({ storageState: LOGGED_OUT_STATE });
 
   test('valid login lands on the correct role dashboard', async ({ page }) => {
-    await page.goto('/login');
-    // The login form is hidden behind the bridge-reveal toggle until clicked.
-    await page.getByRole('button', { name: /build the bridge/i }).click();
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Login' }).first().click();
+    // The login card only appears once the bridge-reveal toggle is clicked.
+    await page.getByRole('button', { name: 'Continue to Sign In' }).click();
     await page.getByLabel('Email').fill(STUDENT.email);
     await page.getByLabel('Password').fill(STUDENT.password);
     await page.getByRole('button', { name: 'Sign in' }).click();
@@ -17,41 +18,38 @@ test.describe('Login and forced password change (starts logged out)', () => {
     await expect(page.getByRole('heading', { name: STUDENT.name })).toBeVisible();
   });
 
-  test('invalid login shows an error and stays on the login page', async ({ page }) => {
-    await page.goto('/login');
-    await page.getByRole('button', { name: /build the bridge/i }).click();
+  test('invalid login shows an error and the modal stays open', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Login' }).first().click();
+    await page.getByRole('button', { name: 'Continue to Sign In' }).click();
     await page.getByLabel('Email').fill(STUDENT.email);
     await page.getByLabel('Password').fill('definitely-the-wrong-password');
     await page.getByRole('button', { name: 'Sign in' }).click();
 
     await expect(page.locator('p.text-red-600')).toBeVisible();
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/$/);
   });
 
   test('a must_change_password user is forced through the change-password flow and cannot navigate away until done', async ({ page }) => {
-    await page.goto('/login');
-    await page.getByRole('button', { name: /build the bridge/i }).click();
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Login' }).first().click();
+    await page.getByRole('button', { name: 'Continue to Sign In' }).click();
     await page.getByLabel('Email').fill(FRESH_STUDENT.email);
     await page.getByLabel('Password').fill(FRESH_STUDENT.password);
     await page.getByRole('button', { name: 'Sign in' }).click();
 
-    // Change-password gate appears in place of the login form — no route change.
+    // Change-password gate appears in place of the login form, inside the same modal.
     // The card's title text is rendered via shadcn's CardTitle (a styled <div>, not
     // a semantic heading, so getByRole('heading', ...) would never match it) and the
     // submit button's own label is also literally "Change Password" — .first() picks
     // the title, which renders before the button in DOM order.
     await expect(page.getByText('Change Password', { exact: true }).first()).toBeVisible();
-    await expect(page).toHaveURL(/\/login$/);
 
     // Attempting to skip ahead via direct URL navigation must not work: RoleGuard
-    // detects mustChangePassword is still true and bounces back to /login, which
-    // re-renders the same gate.
+    // detects mustChangePassword is still true and bounces back to "/" with the
+    // login modal auto-opened via ?login=true, which re-renders the same gate.
     await page.goto('/student/dashboard');
-    await expect(page).toHaveURL(/\/login$/);
-    // The card's title text is rendered via shadcn's CardTitle (a styled <div>, not
-    // a semantic heading, so getByRole('heading', ...) would never match it) and the
-    // submit button's own label is also literally "Change Password" — .first() picks
-    // the title, which renders before the button in DOM order.
+    await expect(page).toHaveURL(/\/\?login=true$/);
     await expect(page.getByText('Change Password', { exact: true }).first()).toBeVisible();
 
     await page.getByLabel('Current Password').fill(FRESH_STUDENT.password);
@@ -65,8 +63,9 @@ test.describe('Login and forced password change (starts logged out)', () => {
     // The flag must actually be cleared server-side too, not just client state —
     // logging in again with the old password should now fail.
     await page.context().clearCookies();
-    await page.goto('/login');
-    await page.getByRole('button', { name: /build the bridge/i }).click();
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Login' }).first().click();
+    await page.getByRole('button', { name: 'Continue to Sign In' }).click();
     await page.getByLabel('Email').fill(FRESH_STUDENT.email);
     await page.getByLabel('Password').fill(FRESH_STUDENT.password);
     await page.getByRole('button', { name: 'Sign in' }).click();
@@ -84,7 +83,7 @@ test.describe('Logout (starts authenticated)', () => {
     await expect(page).toHaveURL(/\/$/);
 
     await page.goto('/student/dashboard');
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/\?login=true$/);
     await context.close();
   });
 });

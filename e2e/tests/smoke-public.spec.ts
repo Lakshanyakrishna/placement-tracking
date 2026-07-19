@@ -8,8 +8,10 @@ test.describe('Public smoke checks', () => {
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Track Every Opportunity');
     // "Login" appears twice (navbar + hero CTA) — just confirm at least one works.
+    // Login now opens as a popup on the landing page itself, not a separate route.
     await page.getByRole('button', { name: 'Login' }).first().click();
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page).toHaveURL(/\/$/);
   });
 
   test('health endpoint returns ok', async ({ request }) => {
