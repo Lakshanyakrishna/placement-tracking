@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { AdminDashboardDto } from './dto/admin-dashboard.dto';
-import { MentorDashboardDto } from './dto/mentor-dashboard.dto';
+import { MentorDashboardDto, MentorFollowUpItemDto } from './dto/mentor-dashboard.dto';
 import { TeamLeaderDashboardDto } from './dto/team-leader-dashboard.dto';
 import { StudentDashboardDto } from './dto/student-dashboard.dto';
 
@@ -51,6 +51,22 @@ function completionRate(verified: number, submitted: number, rejected: number): 
   const total = submitted + verified + rejected;
   if (total === 0) return 0;
   return Math.round((verified / total) * 10000) / 100;
+}
+
+function daysSince(dateStr: string | null): number {
+  if (!dateStr) return 0;
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
+
+interface MentorFollowUpRow {
+  rollNumber: string;
+  studentName: string;
+  groupName: string | null;
+  opportunityTitle: string;
+  status: string;
+  participationId: string;
+  submittedAt: string | null;
 }
 
 @Injectable()
@@ -114,6 +130,42 @@ export class DashboardService {
     const v = toFloat(row.verified);
     const s = toFloat(row.submitted);
     const r = toFloat(row.rejected);
+
+    const followUpRows = await this.dataSource.query<MentorFollowUpRow[]>(
+      `SELECT
+        en.roll_number AS "rollNumber",
+        u.name AS "studentName",
+        g.name AS "groupName",
+        o.title AS "opportunityTitle",
+        p.status AS "status",
+        p.id AS "participationId",
+        p.submitted_at AS "submittedAt"
+      FROM participations p
+      JOIN enrollments en ON p.enrollment_id = en.id
+      JOIN sections s ON en.section_id = s.id
+      JOIN users u ON en.user_id = u.id
+      JOIN opportunities o ON p.opportunity_id = o.id
+      LEFT JOIN groups g ON en.group_id = g.id
+      WHERE s.mentor_user_id = $1
+        AND en.deleted_at IS NULL AND s.deleted_at IS NULL
+        AND p.status IN ('submitted', 'in_progress')`,
+      [userId],
+    );
+
+    const followUpQueue: MentorFollowUpItemDto[] = followUpRows
+      .map((row) => ({
+        rollNumber: row.rollNumber ?? '—',
+        studentName: row.studentName ?? 'Unknown',
+        groupName: row.groupName ?? '—',
+        opportunityTitle: row.opportunityTitle,
+        status: row.status,
+        participationId: row.participationId,
+        submittedAt: row.submittedAt,
+        daysPending: daysSince(row.submittedAt),
+      }))
+      .sort((a, b) => b.daysPending - a.daysPending)
+      .slice(0, 20);
+
     return {
       assignedSections: toFloat(row.assignedSections),
       totalStudents: toFloat(row.totalStudents),
@@ -122,6 +174,7 @@ export class DashboardService {
       verified: v,
       rejected: r,
       completionRate: completionRate(v, s, r),
+      followUpQueue,
     };
   }
 
