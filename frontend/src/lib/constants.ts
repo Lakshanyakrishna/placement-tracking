@@ -35,6 +35,7 @@ export const PARTICIPATION_STATUSES = {
 
 export const ROUTES = {
   LOGIN: '/login',
+  HELP: '/help',
   ADMIN_DASHBOARD: '/admin/dashboard',
   ADMIN_OPPORTUNITIES: '/admin/opportunities',
   ADMIN_OPPORTUNITIES_NEW: '/admin/opportunities/new',
