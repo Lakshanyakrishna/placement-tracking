@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { GraduationCap, ShieldAlert } from 'lucide-react'
+import { PasswordField } from '@/components/shared/PasswordField'
 import * as authApi from '@/api/auth.api'
 
 const changePasswordSchema = z
@@ -20,12 +21,12 @@ const changePasswordSchema = z
     path: ['confirmPassword'],
   })
 
+type FormData = z.infer<typeof changePasswordSchema>
+
 interface ChangePasswordFormProps {
   email: string
   onComplete: () => void
 }
-
-type FormData = z.infer<typeof changePasswordSchema>
 
 export function ChangePasswordForm({ email, onComplete }: ChangePasswordFormProps) {
   const [error, setError] = useState<string | null>(null)
@@ -77,27 +78,27 @@ export function ChangePasswordForm({ email, onComplete }: ChangePasswordFormProp
               <Label htmlFor="email" className="text-sm text-[#111827]">Email</Label>
               <Input id="email" type="email" value={email} disabled />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword" className="text-sm text-[#111827]">Current Password</Label>
-              <Input id="currentPassword" type="password" {...register('currentPassword')} />
-              {errors.currentPassword && (
-                <p className="text-xs text-red-600">{errors.currentPassword.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="newPassword" className="text-sm text-[#111827]">New Password</Label>
-              <Input id="newPassword" type="password" {...register('newPassword')} />
-              {errors.newPassword && (
-                <p className="text-xs text-red-600">{errors.newPassword.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-sm text-[#111827]">Confirm New Password</Label>
-              <Input id="confirmPassword" type="password" {...register('confirmPassword')} />
-              {errors.confirmPassword && (
-                <p className="text-xs text-red-600">{errors.confirmPassword.message}</p>
-              )}
-            </div>
+            <PasswordField
+              id="currentPassword"
+              label="Current Password"
+              register={register}
+              fieldName="currentPassword"
+              error={errors.currentPassword?.message}
+            />
+            <PasswordField
+              id="newPassword"
+              label="New Password"
+              register={register}
+              fieldName="newPassword"
+              error={errors.newPassword?.message}
+            />
+            <PasswordField
+              id="confirmPassword"
+              label="Confirm New Password"
+              register={register}
+              fieldName="confirmPassword"
+              error={errors.confirmPassword?.message}
+            />
             {error && <p className="text-sm text-red-600">{error}</p>}
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? 'Changing...' : 'Change Password'}
