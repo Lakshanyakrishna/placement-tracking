@@ -7,6 +7,8 @@ test.describe('Login and forced password change (starts logged out)', () => {
 
   test('valid login lands on the correct role dashboard', async ({ page }) => {
     await page.goto('/login');
+    // The login form is hidden behind the bridge-reveal toggle until clicked.
+    await page.getByRole('button', { name: /build the bridge/i }).click();
     await page.getByLabel('Email').fill(STUDENT.email);
     await page.getByLabel('Password').fill(STUDENT.password);
     await page.getByRole('button', { name: 'Sign in' }).click();
@@ -17,6 +19,7 @@ test.describe('Login and forced password change (starts logged out)', () => {
 
   test('invalid login shows an error and stays on the login page', async ({ page }) => {
     await page.goto('/login');
+    await page.getByRole('button', { name: /build the bridge/i }).click();
     await page.getByLabel('Email').fill(STUDENT.email);
     await page.getByLabel('Password').fill('definitely-the-wrong-password');
     await page.getByRole('button', { name: 'Sign in' }).click();
@@ -27,6 +30,7 @@ test.describe('Login and forced password change (starts logged out)', () => {
 
   test('a must_change_password user is forced through the change-password flow and cannot navigate away until done', async ({ page }) => {
     await page.goto('/login');
+    await page.getByRole('button', { name: /build the bridge/i }).click();
     await page.getByLabel('Email').fill(FRESH_STUDENT.email);
     await page.getByLabel('Password').fill(FRESH_STUDENT.password);
     await page.getByRole('button', { name: 'Sign in' }).click();
@@ -62,6 +66,7 @@ test.describe('Login and forced password change (starts logged out)', () => {
     // logging in again with the old password should now fail.
     await page.context().clearCookies();
     await page.goto('/login');
+    await page.getByRole('button', { name: /build the bridge/i }).click();
     await page.getByLabel('Email').fill(FRESH_STUDENT.email);
     await page.getByLabel('Password').fill(FRESH_STUDENT.password);
     await page.getByRole('button', { name: 'Sign in' }).click();

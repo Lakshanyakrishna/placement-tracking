@@ -146,7 +146,7 @@ export async function authedContext(
   } finally {
     await apiContext.dispose();
   }
-  const context = await browser.newContext({ storageState });
+  const context = await browser.newContext({ storageState, baseURL: FRONTEND_URL });
   const page = await context.newPage();
   return { context, page };
 }

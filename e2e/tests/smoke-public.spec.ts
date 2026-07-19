@@ -6,9 +6,8 @@ test.use({ storageState: LOGGED_OUT_STATE });
 test.describe('Public smoke checks', () => {
   test('landing page renders', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Every Certification');
-    // There are multiple elements navigating to /login on this page (desktop/mobile
-    // nav + two hero CTAs) — just confirm at least one is present and works.
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Track Every Opportunity');
+    // "Login" appears twice (navbar + hero CTA) — just confirm at least one works.
     await page.getByRole('button', { name: 'Login' }).first().click();
     await expect(page).toHaveURL(/\/login$/);
   });
