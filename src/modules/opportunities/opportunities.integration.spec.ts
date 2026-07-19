@@ -18,7 +18,7 @@ const mockOpportunity: OpportunityResponseDto = {
   academicPeriodId: UUID,
   title: 'Summer Internship',
   description: 'A great opportunity',
-  applicationLink: null,
+  applicationLink: null, meetingLink: null,
   opportunityType: OpportunityType.INTERNSHIP,
   state: OpportunityState.DRAFT,
   createdBy: UUID,

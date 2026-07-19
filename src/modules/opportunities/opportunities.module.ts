@@ -4,10 +4,11 @@ import { OpportunitiesService } from './opportunities.service';
 import { OpportunitiesController } from './opportunities.controller';
 import { Opportunity } from './entities/opportunity.entity';
 import { OpportunityTarget } from './entities/opportunity-target.entity';
+import { OpportunityRound } from './entities/opportunity-round.entity';
 import { IamModule } from '../iam/iam.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Opportunity, OpportunityTarget]), IamModule],
+  imports: [TypeOrmModule.forFeature([Opportunity, OpportunityTarget, OpportunityRound]), IamModule],
   controllers: [OpportunitiesController],
   providers: [OpportunitiesService],
   exports: [OpportunitiesService],

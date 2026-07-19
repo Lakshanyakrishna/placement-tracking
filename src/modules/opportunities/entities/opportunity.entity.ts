@@ -36,6 +36,9 @@ export class Opportunity extends BaseEntity {
   @Column({ name: 'application_link', type: 'varchar', length: 2048, nullable: true })
   applicationLink: string | null;
 
+  @Column({ name: 'meeting_link', type: 'varchar', length: 2048, nullable: true })
+  meetingLink: string | null;
+
   @Column({ name: 'opportunity_type', type: 'varchar', length: 20 })
   opportunityType: OpportunityType;
 

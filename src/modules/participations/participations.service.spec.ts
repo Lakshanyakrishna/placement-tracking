@@ -12,7 +12,7 @@ const UUID = '550e8400-e29b-41d4-a716-446655440000';
 const mockUser = { id: UUID, roles: [{ role: 'admin' }], isStudent: false };
 
 const mockOpportunity: Opportunity = {
-  id: UUID, academicPeriodId: UUID, title: 'Internship', description: '', applicationLink: null,
+  id: UUID, academicPeriodId: UUID, title: 'Internship', description: '', applicationLink: null, meetingLink: null,
   opportunityType: OpportunityType.INTERNSHIP, state: OpportunityState.PUBLISHED,
   createdBy: UUID, opensAt: null, closesAt: null, verificationDeadline: '7 days',
   requireProof: true, maxSubmissions: null, allowGroupSubmission: false,

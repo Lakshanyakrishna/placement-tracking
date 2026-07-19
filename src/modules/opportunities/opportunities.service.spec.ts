@@ -46,7 +46,7 @@ function freshMock(): Opportunity {
     academicPeriodId: 'ap-1',
     title: 'Summer Internship',
     description: 'A great opportunity',
-    applicationLink: null,
+    applicationLink: null, meetingLink: null,
     opportunityType: OpportunityType.INTERNSHIP,
     state: OpportunityState.DRAFT,
     createdBy: 'user-1',

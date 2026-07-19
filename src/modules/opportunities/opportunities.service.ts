@@ -3,6 +3,7 @@ import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere, Like, In, DataSource } from 'typeorm';
 import { Opportunity, OpportunityState, OpportunityType } from './entities/opportunity.entity';
 import { OpportunityTarget, TargetType } from './entities/opportunity-target.entity';
+import { OpportunityRound } from './entities/opportunity-round.entity';
 import { PaginationQueryDto, PaginationMetaDto, createPaginationMeta, parseSort } from '../../common/dto/pagination.dto';
 import { CreateOpportunityDto, VisibilityScope } from './dto/create-opportunity.dto';
 import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
@@ -10,6 +11,8 @@ import { OpportunityResponseDto } from './dto/opportunity-response.dto';
 import { OpportunityFilterDto } from './dto/opportunity-filter.dto';
 import { SetTargetsDto, TargetItemDto } from './dto/set-targets.dto';
 import { TargetResponseDto } from './dto/target-response.dto';
+import { SetRoundsDto } from './dto/set-rounds.dto';
+import { RoundResponseDto } from './dto/round-response.dto';
 import { IamService } from '../iam/iam.service';
 
 type RequestUser = { id: string; roles?: Array<{ role: string }>; isStudent?: boolean };
@@ -25,6 +28,8 @@ export class OpportunitiesService {
     private readonly repository: Repository<Opportunity>,
     @InjectRepository(OpportunityTarget)
     private readonly targetRepository: Repository<OpportunityTarget>,
+    @InjectRepository(OpportunityRound)
+    private readonly roundRepository: Repository<OpportunityRound>,
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly iamService: IamService,
   ) {}
@@ -155,7 +160,15 @@ export class OpportunitiesService {
       where: { opportunityId: id },
       relations: ['branch', 'section', 'group', 'batch'],
     });
-    return OpportunityResponseDto.fromEntity(entity, targets.map(TargetResponseDto.fromEntity));
+    const rounds = await this.roundRepository.find({
+      where: { opportunityId: id },
+      order: { sequence: 'ASC' },
+    });
+    return OpportunityResponseDto.fromEntity(
+      entity,
+      targets.map(TargetResponseDto.fromEntity),
+      rounds.map(RoundResponseDto.fromEntity),
+    );
   }
 
   private assertOwnerOrAdmin(entity: Opportunity, user: RequestUser): void {
@@ -253,6 +266,46 @@ export class OpportunitiesService {
     });
 
     return loaded.map(TargetResponseDto.fromEntity);
+  }
+
+  async setRounds(id: string, dto: SetRoundsDto, user: RequestUser): Promise<RoundResponseDto[]> {
+    const opportunity = await this.repository.findOneBy({ id });
+    if (!opportunity) {
+      throw new NotFoundException(`Opportunity with id "${id}" not found`);
+    }
+    this.assertOwnerOrAdmin(opportunity, user);
+
+    await this.roundRepository.delete({ opportunityId: id });
+
+    const entities = dto.rounds.map((item, index) =>
+      this.roundRepository.create({
+        opportunityId: id,
+        title: item.title,
+        link: item.link ?? null,
+        scheduledAt: item.scheduledAt ? new Date(item.scheduledAt) : null,
+        notes: item.notes ?? '',
+        sequence: index,
+      }),
+    );
+
+    if (entities.length > 0) {
+      await this.roundRepository.save(entities);
+    }
+
+    const loaded = await this.roundRepository.find({
+      where: { opportunityId: id },
+      order: { sequence: 'ASC' },
+    });
+
+    return loaded.map(RoundResponseDto.fromEntity);
+  }
+
+  async getRounds(id: string): Promise<RoundResponseDto[]> {
+    const rounds = await this.roundRepository.find({
+      where: { opportunityId: id },
+      order: { sequence: 'ASC' },
+    });
+    return rounds.map(RoundResponseDto.fromEntity);
   }
 
   async findAvailable(userId: string): Promise<OpportunityResponseDto[]> {

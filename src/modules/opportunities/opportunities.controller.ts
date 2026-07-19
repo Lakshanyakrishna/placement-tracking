@@ -24,6 +24,8 @@ import { OpportunityResponseDto } from './dto/opportunity-response.dto';
 import { OpportunityFilterDto } from './dto/opportunity-filter.dto';
 import { SetTargetsDto } from './dto/set-targets.dto';
 import { TargetResponseDto } from './dto/target-response.dto';
+import { SetRoundsDto } from './dto/set-rounds.dto';
+import { RoundResponseDto } from './dto/round-response.dto';
 import { PaginationMetaDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Opportunities')
@@ -146,5 +148,30 @@ export class OpportunitiesController {
     @Param('id', UuidValidationPipe) id: string,
   ): Promise<TargetResponseDto[]> {
     return this.opportunitiesService.getTargets(id);
+  }
+
+  @Post(':id/rounds')
+  @Roles('admin', 'mentor', 'team_leader')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Set rounds for an opportunity (replaces existing) — e.g. Round 1: Online Assessment, Round 2: Technical Interview' })
+  @ApiResponse({ status: 200, description: 'Rounds set', type: [RoundResponseDto] })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Opportunity not found' })
+  async setRounds(
+    @Param('id', UuidValidationPipe) id: string,
+    @Body() dto: SetRoundsDto,
+    @CurrentUser() user: any,
+  ): Promise<RoundResponseDto[]> {
+    return this.opportunitiesService.setRounds(id, dto, user);
+  }
+
+  @Get(':id/rounds')
+  @ApiOperation({ summary: 'Get rounds for an opportunity' })
+  @ApiResponse({ status: 200, description: 'Rounds retrieved', type: [RoundResponseDto] })
+  @ApiResponse({ status: 404, description: 'Opportunity not found' })
+  async getRounds(
+    @Param('id', UuidValidationPipe) id: string,
+  ): Promise<RoundResponseDto[]> {
+    return this.opportunitiesService.getRounds(id);
   }
 }

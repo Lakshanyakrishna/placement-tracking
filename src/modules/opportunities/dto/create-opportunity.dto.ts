@@ -25,6 +25,12 @@ export class CreateOpportunityDto {
   @MaxLength(2048)
   applicationLink?: string;
 
+  @ApiPropertyOptional({ example: 'https://zoom.us/j/1234567890', description: 'Zoom/meeting link or an assessment/test link for this opportunity' })
+  @IsOptional()
+  @IsUrl({ require_protocol: true })
+  @MaxLength(2048)
+  meetingLink?: string;
+
   @ApiProperty({ enum: OpportunityType, example: OpportunityType.INTERNSHIP })
   @IsEnum(OpportunityType)
   opportunityType: OpportunityType;
