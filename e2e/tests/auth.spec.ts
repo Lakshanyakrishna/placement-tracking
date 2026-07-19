@@ -8,7 +8,7 @@ test.describe('Login and forced password change (starts logged out)', () => {
   test('valid login lands on the correct role dashboard', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Login' }).first().click();
-    // The login card only appears once the bridge-reveal toggle is clicked.
+    // The login card only appears once the reveal toggle is clicked.
     await page.getByRole('button', { name: 'Continue to Sign In' }).click();
     await page.getByLabel('Email').fill(STUDENT.email);
     await page.getByLabel('Password').fill(STUDENT.password);
