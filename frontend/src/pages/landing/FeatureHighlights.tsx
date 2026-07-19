@@ -1,6 +1,7 @@
 import verificationShot from '@/assets/screenshots/verification-queue.webp'
 import studentShot from '@/assets/screenshots/student-dashboard.webp'
 import mentorShot from '@/assets/screenshots/mentor-dashboard.webp'
+import { Reveal } from '@/components/shared/Reveal'
 
 interface Feature {
   title: string
@@ -46,20 +47,19 @@ export function FeatureHighlights() {
     <section className="bg-gray-50 py-20 sm:py-28">
       <div className="mx-auto max-w-7xl space-y-20 px-4 sm:space-y-28 sm:px-6">
         {FEATURES.map((f) => (
-          <div
-            key={f.title}
-            className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16"
-          >
-            <div className={f.imageFirst ? 'lg:order-1' : 'lg:order-2'}>
-              <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-lg shadow-gray-200/60">
-                <img src={f.image} alt={f.alt} loading="lazy" className="w-full" width={900} height={563} />
+          <Reveal key={f.title}>
+            <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+              <div className={f.imageFirst ? 'lg:order-1' : 'lg:order-2'}>
+                <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-lg shadow-gray-200/60 transition-transform duration-300 hover:-translate-y-1">
+                  <img src={f.image} alt={f.alt} loading="lazy" className="w-full" width={900} height={563} />
+                </div>
+              </div>
+              <div className={f.imageFirst ? 'lg:order-2' : 'lg:order-1'}>
+                <h3 className="font-stmary text-2xl font-bold text-gray-900 sm:text-3xl">{f.title}</h3>
+                <p className="mt-4 text-base leading-relaxed text-gray-600">{f.description}</p>
               </div>
             </div>
-            <div className={f.imageFirst ? 'lg:order-2' : 'lg:order-1'}>
-              <h3 className="font-stmary text-2xl font-bold text-gray-900 sm:text-3xl">{f.title}</h3>
-              <p className="mt-4 text-base leading-relaxed text-gray-600">{f.description}</p>
-            </div>
-          </div>
+          </Reveal>
         ))}
       </div>
     </section>

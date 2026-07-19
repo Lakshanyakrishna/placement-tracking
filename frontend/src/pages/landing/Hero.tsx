@@ -36,13 +36,13 @@ export function Hero({ onLoginClick }: HeroProps) {
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <button
               onClick={onLoginClick}
-              className="inline-flex items-center gap-2 rounded-full bg-stmary-primary px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-stmary-primary/20 transition-colors hover:bg-stmary-primary-dark"
+              className="animate-cta-pulse inline-flex items-center gap-2 rounded-full bg-stmary-primary px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-stmary-primary/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-stmary-primary-dark hover:shadow-xl"
             >
               Login <ArrowRight className="h-4 w-4" />
             </button>
             <button
               onClick={scrollToFeatures}
-              className="rounded-full border border-gray-300 px-7 py-3 text-sm font-semibold text-gray-800 transition-colors hover:bg-gray-50"
+              className="rounded-full border border-gray-300 px-7 py-3 text-sm font-semibold text-gray-800 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-50"
             >
               Learn More
             </button>

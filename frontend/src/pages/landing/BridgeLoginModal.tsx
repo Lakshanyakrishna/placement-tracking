@@ -17,6 +17,7 @@ export default function BridgeLoginModal({ onClose }: BridgeLoginModalProps) {
   const navigate = useNavigate()
   const [freshLoginEmail, setFreshLoginEmail] = useState<string | null>(null)
   const [shown, setShown] = useState(false)
+  const [pendingRedirect, setPendingRedirect] = useState(false)
 
   const pendingEmail = user?.mustChangePassword ? user.email : freshLoginEmail
 
@@ -26,26 +27,47 @@ export default function BridgeLoginModal({ onClose }: BridgeLoginModalProps) {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKeyDown)
+
+    // Without this, the landing page behind the modal can still be scrolled on
+    // mobile (this dialog is `position: fixed`, not a real overlay that traps
+    // scroll) — the background visibly drifts under the fixed modal as the user
+    // scrolls, which is jarring and can even desync iOS Safari's fixed-position
+    // rendering. Restore the original value on close rather than assuming '',
+    // in case something else on the page already set it.
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
     return () => {
       cancelAnimationFrame(raf)
       window.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = previousOverflow
     }
   }, [onClose])
 
-  const goToDashboard = () => {
-    const userRoles = [...(user?.roles ?? [])]
-    if (user?.isStudent) userRoles.push('student')
+  // `login()`/`clearMustChangePassword()` update AuthContext's `user` state, but
+  // that update isn't visible in this closure until the next render — reading
+  // `user` synchronously right after calling either of those (as an earlier
+  // version of this file did) silently redirects nowhere. Deferring the redirect
+  // to an effect that watches `user` is the same pattern the original
+  // (pre-modal) LoginPage.tsx used, and is the only way to see the fresh value.
+  useEffect(() => {
+    if (!pendingRedirect || !user || user.mustChangePassword) return
+    const userRoles = [...(user.roles ?? [])]
+    if (user.isStudent) userRoles.push('student')
     const firstRole = userRoles.find((r) => ROLE_DASHBOARD_MAP[r])
-    if (firstRole) navigate(ROLE_DASHBOARD_MAP[firstRole])
-  }
+    if (firstRole) {
+      setPendingRedirect(false)
+      onClose()
+      navigate(ROLE_DASHBOARD_MAP[firstRole])
+    }
+  }, [pendingRedirect, user, navigate, onClose])
 
   const handleLogin = async (data: { email: string; password: string }) => {
     const result = await login(data.email, data.password)
     if (result.mustChangePassword) {
       setFreshLoginEmail(data.email)
     } else {
-      onClose()
-      goToDashboard()
+      setPendingRedirect(true)
     }
   }
 
@@ -73,8 +95,7 @@ export default function BridgeLoginModal({ onClose }: BridgeLoginModalProps) {
               onComplete={() => {
                 clearMustChangePassword()
                 setFreshLoginEmail(null)
-                onClose()
-                goToDashboard()
+                setPendingRedirect(true)
               }}
             />
           </div>

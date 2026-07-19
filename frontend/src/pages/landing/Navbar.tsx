@@ -30,7 +30,7 @@ export function Navbar({ onLoginClick }: NavbarProps) {
 
         <button
           onClick={onLoginClick}
-          className="rounded-full bg-stmary-primary px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-stmary-primary-dark"
+          className="rounded-full bg-stmary-primary px-5 py-2 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-stmary-primary-dark hover:shadow-md"
         >
           Login
         </button>

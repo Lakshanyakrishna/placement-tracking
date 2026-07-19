@@ -1,4 +1,5 @@
 import { GraduationCap, Users, ShieldCheck, Building2, type LucideIcon } from 'lucide-react'
+import { Reveal } from '@/components/shared/Reveal'
 
 interface RoleCard {
   icon: LucideIcon
@@ -59,24 +60,23 @@ export function HowItWorks() {
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {ROLES.map((r) => (
-            <div
-              key={r.role}
-              className="rounded-2xl border border-gray-200 p-6 transition-shadow hover:shadow-md"
-            >
-              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-stmary-primary/10 text-stmary-primary">
-                <r.icon className="h-5 w-5" />
+          {ROLES.map((r, i) => (
+            <Reveal key={r.role} delayMs={i * 80}>
+              <div className="h-full rounded-2xl border border-gray-200 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-stmary-primary/20 hover:shadow-lg">
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-stmary-primary/10 text-stmary-primary">
+                  <r.icon className="h-5 w-5" />
+                </div>
+                <h3 className="font-stmary text-lg font-semibold text-gray-900">{r.role}</h3>
+                <ul className="mt-3 space-y-2">
+                  {r.bullets.map((b) => (
+                    <li key={b} className="flex gap-2 text-sm leading-relaxed text-gray-600">
+                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-stmary-primary" />
+                      {b}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <h3 className="font-stmary text-lg font-semibold text-gray-900">{r.role}</h3>
-              <ul className="mt-3 space-y-2">
-                {r.bullets.map((b) => (
-                  <li key={b} className="flex gap-2 text-sm leading-relaxed text-gray-600">
-                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-stmary-primary" />
-                    {b}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
