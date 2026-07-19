@@ -44,6 +44,7 @@ export const ROUTES = {
   ADMIN_STUDENTS: '/admin/students',
   ADMIN_VERIFICATIONS: '/admin/verifications',
   ADMIN_REPORTS: '/admin/reports',
+  DASHBOARD_HUB: '/dashboard',
   MENTOR_DASHBOARD: '/mentor/dashboard',
   TEAM_LEADER_DASHBOARD: '/team-leader/dashboard',
   STUDENT_DASHBOARD: '/student/dashboard',
@@ -55,8 +56,8 @@ export const ROUTES = {
 
 export const ROLE_DASHBOARD_MAP: Record<string, string> = {
   [ROLES.ADMIN]: ROUTES.ADMIN_DASHBOARD,
-  [ROLES.MENTOR]: ROUTES.MENTOR_DASHBOARD,
-  [ROLES.TEAM_LEADER]: ROUTES.TEAM_LEADER_DASHBOARD,
+  [ROLES.MENTOR]: ROUTES.DASHBOARD_HUB,
+  [ROLES.TEAM_LEADER]: ROUTES.DASHBOARD_HUB,
   [ROLES.STUDENT]: ROUTES.STUDENT_DASHBOARD,
 }
 
