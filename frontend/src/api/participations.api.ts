@@ -28,11 +28,15 @@ export async function getMyParticipations(): Promise<PaginatedResponse<Participa
 }
 
 export async function getGroupParticipations(groupId: string): Promise<PaginatedResponse<Participation>> {
-  const response = await client.get<PaginatedResponse<Participation>>(`/participations/group/${groupId}?limit=500`)
+  // limit is capped at 100 by the shared PaginationQueryDto backend-wide — a higher
+  // value here 400s on every call, which the admin dashboard's .catch() silently
+  // swallowed into an empty array, making Group Performance/Cert Completion always
+  // show 0 regardless of real data.
+  const response = await client.get<PaginatedResponse<Participation>>(`/participations/group/${groupId}?limit=100`)
   return response.data
 }
 
 export async function getSectionParticipations(sectionId: string): Promise<PaginatedResponse<Participation>> {
-  const response = await client.get<PaginatedResponse<Participation>>(`/participations/section/${sectionId}?limit=500`)
+  const response = await client.get<PaginatedResponse<Participation>>(`/participations/section/${sectionId}?limit=100`)
   return response.data
 }

@@ -121,6 +121,7 @@ export class MentorsImportService {
               name: row.name as string,
               contactPhone: (row.contact_phone as string) || null,
               isActive: true,
+              mustChangePassword: true,
             });
             await manager.save(user);
           }
