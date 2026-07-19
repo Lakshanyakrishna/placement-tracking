@@ -1,5 +1,6 @@
 import client from './client'
 import type { Participation, UpdateParticipationStatusDto, ParticipationFilter } from '@/types/participation'
+import type { OpportunityAnalytics } from '@/types/participation'
 import type { PaginatedResponse } from '@/types/common'
 
 export async function listParticipations(filter?: ParticipationFilter): Promise<PaginatedResponse<Participation>> {
@@ -38,5 +39,10 @@ export async function getGroupParticipations(groupId: string): Promise<Paginated
 
 export async function getSectionParticipations(sectionId: string): Promise<PaginatedResponse<Participation>> {
   const response = await client.get<PaginatedResponse<Participation>>(`/participations/section/${sectionId}?limit=100`)
+  return response.data
+}
+
+export async function getOpportunityAnalytics(opportunityId: string): Promise<OpportunityAnalytics> {
+  const response = await client.get<OpportunityAnalytics>(`/participations/opportunity/${opportunityId}/analytics`)
   return response.data
 }

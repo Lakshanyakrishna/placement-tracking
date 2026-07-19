@@ -33,3 +33,11 @@ export function useUpdateParticipationStatus() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['participations'] }),
   })
 }
+
+export function useOpportunityAnalytics(opportunityId: string) {
+  return useQuery({
+    queryKey: ['participations', 'opportunity-analytics', opportunityId],
+    queryFn: () => api.getOpportunityAnalytics(opportunityId),
+    enabled: !!opportunityId,
+  })
+}

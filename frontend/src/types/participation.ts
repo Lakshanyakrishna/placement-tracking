@@ -31,3 +31,18 @@ export interface ParticipationFilter {
   status?: string
   opportunityId?: string
 }
+
+export interface GroupRegistration {
+  groupId: string
+  groupName: string
+  teamLeaderName: string | null
+  registeredCount: number
+  statusBreakdown: Record<string, number>
+}
+
+export interface OpportunityAnalytics {
+  opportunityId: string
+  opportunityTitle: string
+  totalRegistered: number
+  groups: GroupRegistration[]
+}
