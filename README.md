@@ -5,22 +5,24 @@ A role-based platform (Admin, Mentor, Team Leader, Student) for colleges to publ
 ## Tech Stack
 
 - **Backend:** NestJS + TypeORM + PostgreSQL
-- **Frontend:** React 19 + TypeScript + Vite + Tailwind CSS
+- **Frontend:** React 19 + TypeScript + Vite + Tailwind CSS, `react-hook-form` + `zod` for forms, `recharts` for dashboard charts, `framer-motion` for the landing page's interactive login modal (lazy-loaded — kept out of the eager bundle to protect the public landing page's Lighthouse score)
 - **Auth:** JWT (short-lived access token + httpOnly refresh cookie)
 - **Storage:** S3-compatible object storage (Cloudflare R2, AWS S3, MinIO for local dev)
 - **Email:** SMTP (MailHog for local dev)
 - **Local dev:** Docker Compose
-- **Deployment:** Railway or Render (backend), Vercel (frontend)
+- **Deployment:** Render + Neon + Cloudflare R2 (backend/DB/storage), Vercel (frontend) — see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md); Railway is also supported (`railway.json`)
 
 ## Features
 
-- **Role-based dashboards** — distinct views and permissions for Admin, Mentor, Team Leader, and Student
-- **Opportunity management** — create, publish, archive placement drives and certifications, targeted by branch, section, batch, or group
-- **Participation tracking** — students start, progress through, and complete assigned opportunities
-- **Proof submission & verification workflow** — students upload proof documents; team leaders/mentors verify or reject with notes
+- **Public landing page** — St. Mary's-branded marketing site (hero, placement stats, accreditations, role-by-role feature breakdown) with an interactive bridge-toggle login modal, rather than a separate `/login` route, so a first-time visitor only downloads the landing page itself
+- **Role-based dashboards** — distinct views for Admin, Mentor, Team Leader, and Student. Mentor and Team Leader share a single dashboard hub (`/dashboard`) with a preview tile per role someone actually holds, rather than forcing a dual-role person through two unrelated full dashboards
+- **Opportunity management** — create, publish, archive placement drives and certifications, targeted by branch, section, batch, or group; optional application link, a separate meeting/assessment link, and multi-round scheduling (e.g. Round 1: Online Assessment, Round 2: Technical Interview), each round with its own link and time
+- **Participation tracking** — students start, progress through, and complete assigned opportunities; round links and schedules surface directly on their certification/placement cards
+- **Proof submission & verification workflow** — students upload proof documents; team leaders/mentors verify or reject with notes; students can view/download their own submitted file back
 - **Excel bulk imports** — students, mentors, groups, and team leaders can be imported in bulk from spreadsheets
-- **Analytics** — certification/placement completion breakdowns by group, for mentors and admins
-- **Email notifications** — for key workflow events
+- **Analytics & drill-down** — a color-coded Certification Completion Heatmap (with legend), a click-to-drill-down Group Performance chart (click a group's bar to see student-level status), and per-opportunity registration analytics (who registered, broken down by group/team leader)
+- **Follow-up queue** — mentors get a section-scoped list of stalled (in-progress/submitted) participations, sorted by days pending
+- **Email notifications** — for key workflow events, including a working forgot-password → reset-password flow
 - **Forced password change** on first login for all seeded/imported accounts
 
 ## Local Development Quick Start
@@ -111,3 +113,6 @@ See [`docs/`](docs/) for architecture deep-dives:
 | [`BACKEND-ARCHITECTURE.md`](docs/BACKEND-ARCHITECTURE.md) | NestJS module design |
 | [`FRONTEND-ARCHITECTURE.md`](docs/FRONTEND-ARCHITECTURE.md) | React frontend architecture |
 | [`INFRASTRUCTURE-DESIGN.md`](docs/INFRASTRUCTURE-DESIGN.md) | Docker infrastructure design |
+| [`ONBOARDING-AND-LOGIN.md`](docs/ONBOARDING-AND-LOGIN.md) | Plain-language guide for the Placement Cell: how students/mentors/team leaders actually get their first login |
+| [`TESTING.md`](docs/TESTING.md) | Full breakdown of the three test layers (unit/integration, e2e, smoke) |
+| [`DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Concrete Render + Neon + Cloudflare R2 + Vercel deployment walkthrough |
