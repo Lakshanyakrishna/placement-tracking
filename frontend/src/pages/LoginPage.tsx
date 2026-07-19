@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { LoginForm } from '@/components/auth/LoginForm'
+import { LoginScreen } from '@/pages/login/LoginScreen'
 import { ChangePasswordForm } from '@/components/auth/ChangePasswordForm'
 import { ROLE_DASHBOARD_MAP } from '@/lib/constants'
 
@@ -50,5 +50,5 @@ export default function LoginPage() {
     )
   }
 
-  return <LoginForm onSubmit={(data) => handleLogin(data)} />
+  return <LoginScreen onSubmit={handleLogin} />
 }
