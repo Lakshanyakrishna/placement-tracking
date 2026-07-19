@@ -346,7 +346,18 @@ export class OpportunitiesService {
       relations: ['academicPeriod', 'createdByUser'],
     });
 
-    return entities.map((e) => OpportunityResponseDto.fromEntity(e));
+    const allRounds = await this.roundRepository.find({
+      where: { opportunityId: In(ids.map(r => r.id)) },
+      order: { sequence: 'ASC' },
+    });
+    const roundsByOpportunity = new Map<string, RoundResponseDto[]>();
+    for (const round of allRounds) {
+      const list = roundsByOpportunity.get(round.opportunityId) ?? [];
+      list.push(RoundResponseDto.fromEntity(round));
+      roundsByOpportunity.set(round.opportunityId, list);
+    }
+
+    return entities.map((e) => OpportunityResponseDto.fromEntity(e, undefined, roundsByOpportunity.get(e.id)));
   }
 
   async getTargets(id: string): Promise<TargetResponseDto[]> {
