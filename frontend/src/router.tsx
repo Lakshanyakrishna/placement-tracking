@@ -26,6 +26,7 @@ const ProfilePage = lazy(() => import('@/pages/student/ProfilePage'))
 const OpportunityListPage = lazy(() => import('@/pages/opportunities/ListPage'))
 const OpportunityCreatePage = lazy(() => import('@/pages/opportunities/CreatePage'))
 const OpportunityEditPage = lazy(() => import('@/pages/opportunities/EditPage'))
+const OpportunityAnalyticsPage = lazy(() => import('@/pages/opportunities/AnalyticsPage'))
 const StudentsListPage = lazy(() => import('@/pages/admin/students/ListPage'))
 const VerificationsListPage = lazy(() => import('@/pages/admin/verifications/ListPage'))
 const ReportsListPage = lazy(() => import('@/pages/admin/reports/ListPage'))
@@ -89,6 +90,14 @@ export const router = createBrowserRouter([
         element: withSuspense(
           <RoleGuard allowedRoles={[ROLES.ADMIN, ROLES.MENTOR, ROLES.TEAM_LEADER]}>
             <OpportunityEditPage />
+          </RoleGuard>,
+        ),
+      },
+      {
+        path: 'admin/opportunities/:id/analytics',
+        element: withSuspense(
+          <RoleGuard allowedRoles={[ROLES.ADMIN, ROLES.MENTOR, ROLES.TEAM_LEADER]}>
+            <OpportunityAnalyticsPage />
           </RoleGuard>,
         ),
       },
