@@ -12,6 +12,7 @@ import { FileText, Eye, Upload, Play, Sparkles, XCircle, ExternalLink } from 'lu
 import { isPlacementType } from '@/lib/constants'
 import { CareerPathTrail } from '@/components/dashboard/CareerPathTrail'
 import { VerificationSeal } from '@/components/dashboard/VerificationSeal'
+import { RoundsList } from '@/components/dashboard/RoundsList'
 
 type StatusFilter = 'all' | 'available' | 'not_started' | 'in_progress' | 'submitted' | 'verified' | 'completed' | 'rejected'
 
@@ -287,6 +288,8 @@ export default function CertificationsPage() {
                     </div>
 
                     <CareerPathTrail status={cert.status} className="mb-3" />
+
+                    <RoundsList rounds={cert.opportunityRounds ?? []} />
 
                     {urgency && (
                       <p className={`text-xs font-medium mb-1 ${urgency.className}`}>{urgency.label}</p>

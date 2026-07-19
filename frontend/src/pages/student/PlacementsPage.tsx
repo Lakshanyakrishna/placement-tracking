@@ -12,6 +12,7 @@ import { Briefcase, Eye, Upload, Play, Sparkles, XCircle, ExternalLink } from 'l
 import { isPlacementType } from '@/lib/constants'
 import { CareerPathTrail } from '@/components/dashboard/CareerPathTrail'
 import { VerificationSeal } from '@/components/dashboard/VerificationSeal'
+import { RoundsList } from '@/components/dashboard/RoundsList'
 
 type StatusFilter = 'all' | 'available' | 'not_started' | 'in_progress' | 'submitted' | 'verified' | 'completed' | 'rejected'
 
@@ -286,6 +287,8 @@ export default function PlacementsPage() {
                     </div>
 
                     <CareerPathTrail status={drive.status} className="mb-3" />
+
+                    <RoundsList rounds={drive.opportunityRounds ?? []} />
 
                     {urgency && (
                       <p className={`text-xs font-medium mb-1 ${urgency.className}`}>{urgency.label}</p>
