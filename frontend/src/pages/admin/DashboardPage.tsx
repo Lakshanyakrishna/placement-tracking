@@ -1,12 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { useAdminDashboardData } from '@/hooks/useAdminDashboardData'
 import { CertHeatmap } from '@/components/dashboard/CertHeatmap'
 import { FollowUpQueue } from '@/components/dashboard/FollowUpQueue'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { ErrorState } from '@/components/shared/ErrorState'
 import { BentoCard, BentoGrid } from '@/components/ui/bento-card'
+import { CompletionGauge } from '@/components/dashboard/CompletionGauge'
+import { AnimatedNumber } from '@/components/dashboard/AnimatedNumber'
+import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import * as sectionsApi from '@/api/sections.api'
-import { Users, Layers, Award, ShieldCheck } from 'lucide-react'
+import { Users, Layers, ShieldCheck, LayoutDashboard } from 'lucide-react'
 
 export default function AdminDashboardPage() {
   const { data, isLoading, error, refetch } = useAdminDashboardData()
@@ -29,53 +33,52 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-[#111827]">{sectionCode}</h1>
-        <p className="text-sm text-[#6B7280]">Section overview and certification tracking</p>
-      </div>
+      <DashboardHeader
+        title={sectionCode}
+        subtitle="Section overview and certification tracking"
+        icon={<LayoutDashboard className="h-6 w-6 text-white" />}
+      />
 
       {/* Top Row: Stats */}
       <BentoGrid>
         <BentoCard>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
-              <Users className="h-5 w-5 text-blue-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-stmary-primary/10">
+              <Users className="h-5 w-5 text-stmary-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-[#111827]">{data.summary.totalStudents}</p>
+              <AnimatedNumber value={data.summary.totalStudents} />
               <p className="text-xs text-[#6B7280]">Students</p>
             </div>
           </div>
         </BentoCard>
         <BentoCard>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50">
-              <Layers className="h-5 w-5 text-purple-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
+              <Layers className="h-5 w-5 text-amber-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-[#111827]">{data.summary.totalGroups}</p>
+              <AnimatedNumber value={data.summary.totalGroups} />
               <p className="text-xs text-[#6B7280]">Groups</p>
             </div>
           </div>
         </BentoCard>
         <BentoCard>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50">
-              <Award className="h-5 w-5 text-green-600" />
-            </div>
+            <CompletionGauge value={completionPct} />
             <div>
-              <p className="text-2xl font-bold text-[#111827]">{completionPct}%</p>
+              <AnimatedNumber value={completionPct} suffix="%" />
               <p className="text-xs text-[#6B7280]">Cert Completion</p>
             </div>
           </div>
         </BentoCard>
         <BentoCard>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-50">
-              <ShieldCheck className="h-5 w-5 text-yellow-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100">
+              <ShieldCheck className="h-5 w-5 text-slate-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-[#111827]">{data.summary.pendingFollowUps}</p>
+              <AnimatedNumber value={data.summary.pendingFollowUps} />
               <p className="text-xs text-[#6B7280]">Pending Verification</p>
             </div>
           </div>
@@ -87,43 +90,47 @@ export default function AdminDashboardPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-[#111827]">Group Performance</h2>
         </div>
-        <div className="space-y-4">
-          {data.groupPerformance.map((g) => {
-            const pct = g.completionPct
-            return (
-              <div key={g.groupId}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-[#111827]">{g.groupName}</span>
-                  <span className="text-xs text-[#6B7280]">
-                    {g.completed}/{g.students} completed
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-[#F3F4F6]">
-                  <div
-                    className="h-2 rounded-full bg-[#B91C1C] transition-all"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <div className="flex gap-4 mt-1 text-xs text-[#6B7280]">
-                  <span>{g.inProgress} in progress</span>
-                  <span>{g.notStarted} not started</span>
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        <ResponsiveContainer width="100%" height={Math.max(220, data.groupPerformance.length * 56)}>
+          <BarChart
+            data={data.groupPerformance.map((g) => ({
+              name: g.groupName,
+              Completed: g.completed,
+              'In Progress': g.inProgress,
+              'Not Started': g.notStarted,
+            }))}
+            layout="vertical"
+            margin={{ left: 8 }}
+          >
+            <defs>
+              <linearGradient id="adminCompletedGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#8f1919" />
+                <stop offset="100%" stopColor="#b82020" />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+            <XAxis type="number" tick={{ fontSize: 12 }} />
+            <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={70} />
+            <Tooltip />
+            <Legend wrapperStyle={{ fontSize: 12 }} />
+            <Bar dataKey="Completed" stackId="a" fill="url(#adminCompletedGradient)" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="In Progress" stackId="a" fill="#f59e0b" />
+            <Bar dataKey="Not Started" stackId="a" fill="#e5e7eb" radius={[0, 4, 4, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
       </BentoCard>
 
-      {/* Third Row: Cert Matrix + Follow-ups */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      {/* Third Row: Cert Matrix + Follow-ups — items-stretch so the Follow-up
+          Queue card matches the Certification Matrix card's height exactly,
+          with its own list scrolling internally rather than growing the page. */}
+      <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <BentoCard colSpan={2}>
+          <BentoCard className="flex h-full flex-col" colSpan={2}>
             <h2 className="text-sm font-semibold text-[#111827] mb-4">Certification Matrix</h2>
             <CertHeatmap rows={data.certHeatmap} groupNames={groupNames} />
           </BentoCard>
         </div>
         <div>
-          <BentoCard>
+          <BentoCard className="flex h-full flex-col">
             <h2 className="text-sm font-semibold text-[#111827] mb-4">Follow-up Queue</h2>
             <FollowUpQueue items={data.followUpQueue} />
           </BentoCard>
