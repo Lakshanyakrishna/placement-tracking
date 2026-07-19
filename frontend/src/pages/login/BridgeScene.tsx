@@ -40,11 +40,13 @@ export function BridgeScene({ revealed, onToggle }: BridgeSceneProps) {
         background: 'linear-gradient(180deg, #eef1f4 0%, #e4e9ee 50%, #dde4ea 100%)',
       }}
     >
-      {/* soft ambient glow — a single restrained accent, not a bright cartoon sun */}
+      {/* soft ambient glow — brand red with a whisper of the university's gold,
+          not a bright cartoon sun; still one restrained accent, just richer */}
       <div
         className="pointer-events-none absolute left-1/2 top-4 h-40 w-40 -translate-x-1/2 rounded-full"
         style={{
-          background: 'radial-gradient(circle, rgba(184,32,32,0.08), transparent 70%)',
+          background:
+            'radial-gradient(circle, rgba(184,32,32,0.09), transparent 65%), radial-gradient(circle at 60% 30%, rgba(255,210,0,0.05), transparent 55%)',
         }}
       />
 
@@ -52,7 +54,11 @@ export function BridgeScene({ revealed, onToggle }: BridgeSceneProps) {
         <p className="font-stmary text-lg font-semibold text-slate-800 sm:text-xl">
           Build Connections. Create Futures.
         </p>
-        <p className="mt-1 text-xs text-slate-500 sm:text-sm">You bridge talent to opportunities.</p>
+        <div
+          className="mx-auto mt-2 h-px w-10 rounded-full"
+          style={{ background: 'linear-gradient(90deg, transparent, #ffd200, transparent)' }}
+        />
+        <p className="mt-2 text-xs text-slate-500 sm:text-sm">You bridge talent to opportunities.</p>
       </div>
 
       {/* Progress indicator — only during the revealed state, mirrors "Building connections..." */}
@@ -184,10 +190,10 @@ export function BridgeScene({ revealed, onToggle }: BridgeSceneProps) {
           )
         })}
 
-        <span className="absolute bottom-[9%] left-0 rounded-md bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600 shadow-sm">
+        <span className="absolute bottom-[9%] left-0 rounded-md border border-slate-200/80 bg-white/80 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.15em] text-slate-500 backdrop-blur-sm">
           Students
         </span>
-        <span className="absolute bottom-[9%] right-0 rounded-md bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600 shadow-sm">
+        <span className="absolute bottom-[9%] right-0 rounded-md border border-slate-200/80 bg-white/80 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.15em] text-slate-500 backdrop-blur-sm">
           Companies
         </span>
 
