@@ -10,6 +10,7 @@ import { CreateParticipationDto } from './dto/create-participation.dto';
 import { UpdateParticipationStatusDto } from './dto/update-participation-status.dto';
 import { ParticipationResponseDto } from './dto/participation-response.dto';
 import { ParticipationFilterDto } from './dto/participation-filter.dto';
+import { OpportunityAnalyticsResponseDto, GroupRegistrationDto } from './dto/opportunity-analytics-response.dto';
 import { IamService } from '../iam/iam.service';
 
 const STATUS_TRANSITIONS: Record<ParticipationStatus, ParticipationStatus[]> = {
@@ -213,6 +214,79 @@ export class ParticipationsService {
     return {
       data: entities.map(ParticipationResponseDto.fromEntity),
       meta: createPaginationMeta(total, query),
+    };
+  }
+
+  async getOpportunityAnalytics(
+    opportunityId: string,
+    user: { id: string; roles?: Array<{ role: string }>; isStudent?: boolean },
+  ): Promise<OpportunityAnalyticsResponseDto> {
+    const opportunity = await this.opportunityRepository.findOneBy({ id: opportunityId });
+    if (!opportunity) {
+      throw new NotFoundException(`Opportunity with id "${opportunityId}" not found`);
+    }
+
+    const userRoles = (user.roles ?? []).map(r => r.role);
+    if (user.isStudent) userRoles.push('student');
+    const isAdmin = userRoles.includes('admin');
+
+    // Scope which groups this caller may see a breakdown for. Admins see every
+    // group; mentors are limited to groups within their own sections; team
+    // leaders are limited to their own group(s) — regardless of who created
+    // the opportunity, so a team leader never sees another group's numbers.
+    let allowedGroupIds: string[] | null = null;
+    if (!isAdmin) {
+      if (userRoles.includes('mentor')) {
+        const sections = await this.iamService.findMentorSections(user.id);
+        const groups = await this.groupRepository.find({ where: { sectionId: In(sections.map(s => s.id)) } });
+        allowedGroupIds = groups.map(g => g.id);
+      } else if (userRoles.includes('team_leader')) {
+        const groups = await this.iamService.findTeamLeaderGroups(user.id);
+        allowedGroupIds = groups.map(g => g.id);
+      } else {
+        throw new ForbiddenException("You do not have access to this opportunity's analytics");
+      }
+    }
+
+    const participations = await this.repository.find({
+      where: { opportunityId },
+      relations: ['enrollment'],
+    });
+
+    const byGroup = new Map<string, { count: number; statusBreakdown: Record<string, number> }>();
+    for (const p of participations) {
+      const groupId = p.enrollment?.groupId;
+      if (!groupId) continue;
+      if (allowedGroupIds && !allowedGroupIds.includes(groupId)) continue;
+      const entry = byGroup.get(groupId) ?? { count: 0, statusBreakdown: {} };
+      entry.count += 1;
+      entry.statusBreakdown[p.status] = (entry.statusBreakdown[p.status] ?? 0) + 1;
+      byGroup.set(groupId, entry);
+    }
+
+    const groups =
+      byGroup.size > 0
+        ? await this.groupRepository.find({ where: { id: In([...byGroup.keys()]) }, relations: ['teamLeader'] })
+        : [];
+
+    const groupDtos: GroupRegistrationDto[] = groups
+      .map((g) => {
+        const entry = byGroup.get(g.id)!;
+        return {
+          groupId: g.id,
+          groupName: g.name,
+          teamLeaderName: g.teamLeader?.name ?? null,
+          registeredCount: entry.count,
+          statusBreakdown: entry.statusBreakdown,
+        };
+      })
+      .sort((a, b) => b.registeredCount - a.registeredCount);
+
+    return {
+      opportunityId,
+      opportunityTitle: opportunity.title,
+      totalRegistered: groupDtos.reduce((sum, g) => sum + g.registeredCount, 0),
+      groups: groupDtos,
     };
   }
 

@@ -21,6 +21,7 @@ import { CreateParticipationDto } from './dto/create-participation.dto';
 import { UpdateParticipationStatusDto } from './dto/update-participation-status.dto';
 import { ParticipationResponseDto } from './dto/participation-response.dto';
 import { ParticipationFilterDto } from './dto/participation-filter.dto';
+import { OpportunityAnalyticsResponseDto } from './dto/opportunity-analytics-response.dto';
 import { PaginationQueryDto, PaginationMetaDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Participations')
@@ -86,6 +87,17 @@ export class ParticipationsController {
     @Query() query: PaginationQueryDto,
   ): Promise<{ data: ParticipationResponseDto[]; meta: PaginationMetaDto }> {
     return this.participationsService.findByOpportunity(opportunityId, query);
+  }
+
+  @Get('opportunity/:opportunityId/analytics')
+  @Roles('admin', 'mentor', 'team_leader')
+  @ApiOperation({ summary: 'Get registration counts by group/team for an opportunity' })
+  @ApiResponse({ status: 200, description: 'Registration analytics', type: OpportunityAnalyticsResponseDto })
+  async getOpportunityAnalytics(
+    @Param('opportunityId', UuidValidationPipe) opportunityId: string,
+    @CurrentUser() user: any,
+  ): Promise<OpportunityAnalyticsResponseDto> {
+    return this.participationsService.getOpportunityAnalytics(opportunityId, user);
   }
 
   @Get('group/:groupId')
