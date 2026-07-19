@@ -1,8 +1,28 @@
+export interface OpportunityRound {
+  id: string
+  opportunityId: string
+  title: string
+  link: string | null
+  scheduledAt: string | null
+  notes: string
+  sequence: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface RoundInput {
+  title: string
+  link?: string
+  scheduledAt?: string
+  notes?: string
+}
+
 export interface Opportunity {
   id: string
   title: string
   description: string
   applicationLink: string | null
+  meetingLink: string | null
   opportunityType: string
   state: string
   createdBy: string
@@ -18,12 +38,14 @@ export interface Opportunity {
   targetGroupId: string | null
   createdAt: string
   updatedAt: string
+  rounds?: OpportunityRound[]
 }
 
 export interface CreateOpportunityDto {
   title: string
   description?: string
   applicationLink?: string
+  meetingLink?: string
   opportunityType: string
   academicPeriodId: string
   opensAt?: string

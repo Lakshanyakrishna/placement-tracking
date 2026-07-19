@@ -1,5 +1,5 @@
 import client from './client'
-import type { Opportunity, CreateOpportunityDto, UpdateOpportunityDto, OpportunityFilter } from '@/types/opportunity'
+import type { Opportunity, CreateOpportunityDto, UpdateOpportunityDto, OpportunityFilter, OpportunityRound, RoundInput } from '@/types/opportunity'
 import type { PaginatedResponse } from '@/types/common'
 
 export async function listOpportunities(filter?: OpportunityFilter): Promise<PaginatedResponse<Opportunity>> {
@@ -38,5 +38,15 @@ export async function archiveOpportunity(id: string): Promise<Opportunity> {
 
 export async function getAvailableOpportunities(): Promise<Opportunity[]> {
   const response = await client.get<Opportunity[]>('/opportunities/available')
+  return response.data
+}
+
+export async function setOpportunityRounds(id: string, rounds: RoundInput[]): Promise<OpportunityRound[]> {
+  const response = await client.post<OpportunityRound[]>(`/opportunities/${id}/rounds`, { rounds })
+  return response.data
+}
+
+export async function getOpportunityRounds(id: string): Promise<OpportunityRound[]> {
+  const response = await client.get<OpportunityRound[]>(`/opportunities/${id}/rounds`)
   return response.data
 }
