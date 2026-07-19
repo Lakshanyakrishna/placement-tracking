@@ -126,3 +126,63 @@
     animation: none;
   }
 }
+
+/* Shared brand-gradient utilities for the authenticated app (dashboards, hub,
+   headers) — kept alongside the landing page's --stmary-* tokens so both
+   surfaces read as the same institutional red/gold, just applied differently. */
+.bg-stmary-gradient {
+  background-image: linear-gradient(135deg, var(--stmary-primary), var(--stmary-primary-dark));
+}
+
+.text-gradient-stmary {
+  background-image: linear-gradient(135deg, var(--stmary-primary), var(--stmary-primary-dark));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.bg-stmary-glow {
+  background-image:
+    radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--stmary-accent) 18%, transparent) 0%, transparent 45%),
+    radial-gradient(circle at 85% 0%, color-mix(in srgb, var(--stmary-primary) 25%, transparent) 0%, transparent 50%),
+    linear-gradient(135deg, var(--stmary-primary), var(--stmary-primary-dark));
+}
+
+/* Scroll-reveal: dependency-free (IntersectionObserver + CSS transition only —
+   no framer-motion/GSAP) so it can't regress the landing page's Lighthouse
+   score. See components/shared/Reveal.tsx. */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    transition: none;
+  }
+}
+
+@keyframes cta-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--stmary-primary) 35%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 10px color-mix(in srgb, var(--stmary-primary) 0%, transparent);
+  }
+}
+
+.animate-cta-pulse {
+  animation: cta-pulse 2.5s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-cta-pulse {
+    animation: none;
+  }
+}
