@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { ErrorState } from '@/components/shared/ErrorState'
@@ -8,9 +9,13 @@ import * as sectionsApi from '@/api/sections.api'
 import * as groupsApi from '@/api/groups.api'
 import * as participationsApi from '@/api/participations.api'
 import * as opportunitiesApi from '@/api/opportunities.api'
-import { FileText, Clock, CheckCircle, AlertCircle, ArrowRight, Sparkles, XCircle } from 'lucide-react'
+import { FileText, Clock, CheckCircle, AlertCircle, ArrowRight, Sparkles, XCircle, GraduationCap } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { isPlacementType } from '@/lib/constants'
+import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
+import { AnimatedNumber } from '@/components/dashboard/AnimatedNumber'
+import { CareerPathTrail } from '@/components/dashboard/CareerPathTrail'
+import { VerificationSeal } from '@/components/dashboard/VerificationSeal'
 
 function getUrgency(closesAt: string | null | undefined): { label: string; className: string } | null {
   if (!closesAt) return null
@@ -79,16 +84,11 @@ export default function StudentDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-[#111827]">
-          {user?.name}
-        </h1>
-        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[#6B7280]">
-          {enrollmentInfo?.rollNumber && <span>Roll No: {enrollmentInfo.rollNumber}</span>}
-          {enrollmentInfo?.sectionName && <span>Section: {enrollmentInfo.sectionName}</span>}
-          {enrollmentInfo?.groupName && <span>Group: {enrollmentInfo.groupName}</span>}
-        </div>
-      </div>
+      <DashboardHeader
+        title={user?.name ?? ''}
+        icon={<GraduationCap className="h-6 w-6 text-white" />}
+        subtitle={[enrollmentInfo?.rollNumber && `Roll No: ${enrollmentInfo.rollNumber}`, enrollmentInfo?.sectionName && `Section: ${enrollmentInfo.sectionName}`, enrollmentInfo?.groupName && `Group: ${enrollmentInfo.groupName}`].filter(Boolean).join('  ·  ')}
+      />
 
       {dash.summary.rejected > 0 && (
         <Card className="border-red-200 bg-red-50">
@@ -108,25 +108,60 @@ export default function StudentDashboardPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { icon: Sparkles, label: 'Available', value: dash.summary.available, color: 'text-purple-600', bg: 'bg-purple-50' },
-          { icon: FileText, label: 'Assigned', value: dash.summary.assigned, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { icon: Clock, label: 'In Progress', value: dash.summary.inProgress, color: 'text-orange-600', bg: 'bg-orange-50' },
-          { icon: AlertCircle, label: 'Submitted', value: dash.summary.pendingVerification, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-          { icon: CheckCircle, label: 'Verified', value: dash.summary.completed, color: 'text-green-600', bg: 'bg-green-50' },
-          { icon: XCircle, label: 'Rejected', value: dash.summary.rejected, color: 'text-red-600', bg: 'bg-red-50' },
-        ].filter(s => s.label !== 'Rejected' || dash.summary.rejected > 0).map((s) => (
-          <Card key={s.label}>
-            <CardContent className="p-4">
-              <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${s.bg}`}>
-                <s.icon className={`h-4 w-4 ${s.color}`} />
-              </div>
-              <p className="mt-2 text-lg font-bold text-[#111827]">{s.value}</p>
-              <p className="text-xs text-[#6B7280]">{s.label}</p>
+      <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {[
+            { icon: Sparkles, label: 'Available', value: dash.summary.available, color: 'text-amber-600', bg: 'bg-amber-50' },
+            { icon: FileText, label: 'Assigned', value: dash.summary.assigned, color: 'text-stmary-primary', bg: 'bg-stmary-primary/10' },
+            { icon: Clock, label: 'In Progress', value: dash.summary.inProgress, color: 'text-orange-600', bg: 'bg-orange-50' },
+            { icon: AlertCircle, label: 'Submitted', value: dash.summary.pendingVerification, color: 'text-yellow-600', bg: 'bg-yellow-50' },
+            { icon: CheckCircle, label: 'Verified', value: dash.summary.completed, color: 'text-green-600', bg: 'bg-green-50' },
+            { icon: XCircle, label: 'Rejected', value: dash.summary.rejected, color: 'text-red-600', bg: 'bg-red-50' },
+          ].filter(s => s.label !== 'Rejected' || dash.summary.rejected > 0).map((s) => (
+            <Card key={s.label} className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+              <CardContent className="p-4">
+                <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${s.bg}`}>
+                  <s.icon className={`h-4 w-4 ${s.color}`} />
+                </div>
+                <AnimatedNumber value={s.value} className="mt-2 text-lg font-bold text-[#111827]" />
+                <p className="text-xs text-[#6B7280]">{s.label}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {dash.summary.assigned > 0 && (
+          <Card>
+            <CardContent className="flex h-full flex-col items-center justify-center p-4">
+              <p className="mb-1 text-xs font-medium text-[#6B7280]">My Progress</p>
+              <ResponsiveContainer width="100%" height={110}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Verified', value: dash.summary.completed, color: '#10b981' },
+                      { name: 'In Progress', value: dash.summary.inProgress + dash.summary.pendingVerification, color: '#f59e0b' },
+                      { name: 'Rejected', value: dash.summary.rejected, color: '#ef4444' },
+                    ].filter((d) => d.value > 0)}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={28}
+                    outerRadius={48}
+                    paddingAngle={2}
+                  >
+                    {[
+                      { name: 'Verified', color: '#10b981' },
+                      { name: 'In Progress', color: '#f59e0b' },
+                      { name: 'Rejected', color: '#ef4444' },
+                    ].map((d) => (
+                      <Cell key={d.name} fill={d.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
-        ))}
+        )}
       </div>
 
       {needsAttention.length > 0 && (
@@ -243,9 +278,14 @@ export default function StudentDashboardPage() {
                       {urgency.label}
                     </p>
                   )}
-                  <span className={`mt-2 inline-block rounded px-2 py-0.5 text-xs font-medium ${statusColors[cert.status] ?? 'bg-gray-100 text-gray-700'}`}>
-                    {cert.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </span>
+                  {cert.status === 'verified' || cert.status === 'completed' ? (
+                    <VerificationSeal label={cert.status === 'completed' ? 'Completed' : 'Verified'} className="mt-2" />
+                  ) : (
+                    <span className={`mt-2 inline-block rounded px-2 py-0.5 text-xs font-medium ${statusColors[cert.status] ?? 'bg-gray-100 text-gray-700'}`}>
+                      {cert.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </span>
+                  )}
+                  <CareerPathTrail status={cert.status} className="mt-2" />
                 </CardContent>
               </Card>
             )
@@ -288,9 +328,14 @@ export default function StudentDashboardPage() {
                       {urgency.label}
                     </p>
                   )}
-                  <span className={`mt-2 inline-block rounded px-2 py-0.5 text-xs font-medium ${statusColors[drive.status] ?? 'bg-gray-100 text-gray-700'}`}>
-                    {drive.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </span>
+                  {drive.status === 'verified' || drive.status === 'completed' ? (
+                    <VerificationSeal label={drive.status === 'completed' ? 'Completed' : 'Verified'} className="mt-2" />
+                  ) : (
+                    <span className={`mt-2 inline-block rounded px-2 py-0.5 text-xs font-medium ${statusColors[drive.status] ?? 'bg-gray-100 text-gray-700'}`}>
+                      {drive.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </span>
+                  )}
+                  <CareerPathTrail status={drive.status} className="mt-2" />
                 </CardContent>
               </Card>
             )
