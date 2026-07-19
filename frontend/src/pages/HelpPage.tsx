@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, ChevronDown, HelpCircle, Mail } from 'lucide-react'
+import crest from '@/assets/stmarys-crest.webp'
 
 interface Faq {
   question: string
@@ -39,16 +40,16 @@ const FAQS: Faq[] = [
 function FaqItem({ faq }: { faq: Faq }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5">
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
       >
-        <span className="text-sm font-medium text-white sm:text-base">{faq.question}</span>
+        <span className="text-sm font-medium text-gray-900 sm:text-base">{faq.question}</span>
         <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
-          <ChevronDown className="h-4 w-4 shrink-0 text-white/50" />
+          <ChevronDown className="h-4 w-4 shrink-0 text-stmary-primary" />
         </motion.span>
       </button>
       <motion.div
@@ -57,7 +58,7 @@ function FaqItem({ faq }: { faq: Faq }) {
         transition={{ duration: 0.25 }}
         className="overflow-hidden"
       >
-        <p className="px-5 pb-4 text-sm leading-relaxed text-white/60">{faq.answer}</p>
+        <p className="border-t border-gray-100 px-5 py-4 text-sm leading-relaxed text-gray-600">{faq.answer}</p>
       </motion.div>
     </div>
   )
@@ -67,20 +68,25 @@ export default function HelpPage() {
   const navigate = useNavigate()
 
   return (
-    <div className="min-h-screen bg-[#0a0a12] px-4 py-10 text-white sm:px-8 sm:py-16">
+    <div className="min-h-screen bg-[#FAFAFA] px-4 py-10 sm:px-8 sm:py-16">
       <div className="mx-auto max-w-2xl">
         <button
           onClick={() => navigate('/login')}
-          className="mb-8 inline-flex items-center gap-1.5 text-sm text-white/50 hover:text-white/75"
+          className="mb-8 inline-flex items-center gap-1.5 text-sm text-gray-500 transition-colors hover:text-gray-800"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to sign in
         </button>
 
         <div className="mb-10 text-center">
-          <HelpCircle className="mx-auto mb-3 h-7 w-7 text-indigo-300" />
-          <h1 className="font-stmary text-2xl font-bold sm:text-3xl">Login &amp; Access Help</h1>
-          <p className="mt-2 text-sm text-white/50 sm:text-base">
+          <div className="mx-auto mb-4 flex items-center justify-center gap-2.5">
+            <img src={crest} alt="St. Mary's Group of Institutions" className="h-10 w-10 rounded-full" />
+          </div>
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-stmary-primary/10">
+            <HelpCircle className="h-6 w-6 text-stmary-primary" />
+          </div>
+          <h1 className="font-stmary text-2xl font-bold text-gray-900 sm:text-3xl">Login &amp; Access Help</h1>
+          <p className="mt-2 text-sm text-gray-500 sm:text-base">
             Common questions about signing in as a student, Team Leader, or Mentor.
           </p>
         </div>
@@ -91,11 +97,11 @@ export default function HelpPage() {
           ))}
         </div>
 
-        <div className="mt-10 rounded-xl border border-white/10 bg-white/5 p-6 text-center">
-          <p className="text-sm text-white/60">Still stuck? Reach your Placement Cell directly.</p>
+        <div className="mt-10 rounded-xl border border-gray-200 bg-white p-6 text-center shadow-sm">
+          <p className="text-sm text-gray-600">Still stuck? Reach your Placement Cell directly.</p>
           <a
             href="mailto:enquiry@stmarysgroup.com"
-            className="mt-2 inline-flex items-center gap-1.5 font-medium text-indigo-300 hover:text-indigo-200"
+            className="mt-2 inline-flex items-center gap-1.5 font-medium text-stmary-primary hover:text-stmary-primary-dark"
           >
             <Mail className="h-4 w-4" />
             enquiry@stmarysgroup.com
