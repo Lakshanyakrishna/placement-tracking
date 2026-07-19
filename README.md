@@ -87,6 +87,8 @@ CI (`.github/workflows/ci.yml`) runs all of the above except the smoke test (whi
 
 ## Deployment
 
+For the concrete Render + Neon + Cloudflare R2 + Vercel walkthrough (including how to migrate real seeded data so logins survive the move), see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
 - **Backend (Railway/Render):** builds from `infrastructure/docker/app/Dockerfile` via the `production` target. Railway config is in [`railway.json`](railway.json) (health check at `/api/v1/health`). Set all required environment variables above in the platform's dashboard — `NODE_ENV=production` (or `APP_ENV=production`) must be set for the fail-fast secret checks and secure cookie behavior to activate.
 - **Frontend (Vercel):** config in [`frontend/vercel.json`](frontend/vercel.json). `VITE_API_BASE_URL` must be set to the deployed backend's full URL in the Vercel project's environment variables, since Vite bakes `VITE_*` variables in at build time and there's no dev-server proxy in production.
 - **After every deploy**, run the smoke test against the real URLs to confirm the API, database, and auth are actually wired up:
