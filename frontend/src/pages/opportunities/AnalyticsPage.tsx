@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { ArrowLeft, Users } from 'lucide-react'
 import { useOpportunityAnalytics } from '@/hooks/useParticipations'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
@@ -6,6 +7,7 @@ import { ErrorState } from '@/components/shared/ErrorState'
 import { Button } from '@/components/ui/button'
 import { StatGrid } from '@/components/dashboard/StatGrid'
 import { StatCard } from '@/components/dashboard/StatCard'
+import { Card, CardContent } from '@/components/ui/card'
 import { ROUTES } from '@/lib/constants'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -42,6 +44,34 @@ export default function OpportunityAnalyticsPage() {
         <StatCard title="Total Registered" value={data.totalRegistered} />
         <StatCard title="Groups Represented" value={data.groups.length} />
       </StatGrid>
+
+      {data.groups.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h2 className="mb-1 text-sm font-semibold text-foreground">Registrations by Group</h2>
+            <p className="mb-3 text-xs text-muted-foreground">How many students in each group have registered</p>
+            <ResponsiveContainer width="100%" height={Math.max(180, data.groups.length * 48)}>
+              <BarChart
+                data={data.groups.map((g) => ({ name: g.groupName, Registered: g.registeredCount }))}
+                layout="vertical"
+                margin={{ left: 8 }}
+              >
+                <defs>
+                  <linearGradient id="analyticsRegisteredGradient" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#8f1919" />
+                    <stop offset="100%" stopColor="#b82020" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 12 }} allowDecimals={false} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={90} />
+                <Tooltip />
+                <Bar dataKey="Registered" fill="url(#analyticsRegisteredGradient)" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       {data.groups.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
