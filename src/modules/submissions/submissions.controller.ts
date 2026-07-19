@@ -74,6 +74,18 @@ export class SubmissionsController {
     return this.submissionsService.findMySubmissions(query, userId);
   }
 
+  @Get('participation/:participationId')
+  @ApiOperation({ summary: 'Get all submissions for a participation (owner, its team leader, or admin only)' })
+  @ApiResponse({ status: 200, description: 'Submissions for the participation' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Participation not found' })
+  async findByParticipation(
+    @Param('participationId', UuidValidationPipe) participationId: string,
+    @CurrentUser() user: any,
+  ): Promise<SubmissionResponseDto[]> {
+    return this.submissionsService.findByParticipation(participationId, user);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a submission by ID' })
   @ApiResponse({ status: 200, description: 'Submission found', type: SubmissionResponseDto })

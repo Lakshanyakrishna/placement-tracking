@@ -188,6 +188,35 @@ export class SubmissionsService {
     return { data, meta: createPaginationMeta(total, query) };
   }
 
+  async findByParticipation(
+    participationId: string,
+    user: { id: string; roles?: Array<{ role: string }>; isStudent?: boolean },
+  ): Promise<SubmissionResponseDto[]> {
+    const participation = await this.participationRepository.findOneBy({ id: participationId });
+    if (!participation) {
+      throw new NotFoundException(`Participation with id "${participationId}" not found`);
+    }
+
+    const userRoles = (user.roles ?? []).map(r => r.role);
+    if (user.isStudent) userRoles.push('student');
+    const isAdmin = userRoles.includes('admin');
+    const isTeamLeader = participation.teamLeaderUserId === user.id;
+
+    const enrollment = await this.enrollmentRepository.findOneBy({ id: participation.enrollmentId });
+    const isOwner = enrollment?.userId === user.id;
+
+    if (!isAdmin && !isOwner && !isTeamLeader) {
+      throw new ForbiddenException('You do not have access to these submissions');
+    }
+
+    const entities = await this.submissionRepository.find({
+      where: { participationId },
+      order: { submittedAt: 'DESC' },
+    });
+
+    return Promise.all(entities.map((e) => this.buildResponse(e.id)));
+  }
+
   async findByGroup(
     groupId: string,
     query: PaginationQueryDto,
