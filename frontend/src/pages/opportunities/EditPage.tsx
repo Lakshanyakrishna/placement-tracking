@@ -20,6 +20,7 @@ const schema = z.object({
   title: z.string().min(1, 'Title is required').max(255),
   description: z.string().optional(),
   applicationLink: z.string().trim().url('Enter a valid URL (e.g. https://...)').optional().or(z.literal('')),
+  meetingLink: z.string().trim().url('Enter a valid URL (e.g. https://...)').optional().or(z.literal('')),
   opportunityType: z.string().min(1, 'Type is required'),
   opensAt: z.string().optional(),
   closesAt: z.string().optional(),
@@ -45,6 +46,7 @@ export default function OpportunityEditPage() {
         title: opportunity.title,
         description: opportunity.description || '',
         applicationLink: opportunity.applicationLink || '',
+        meetingLink: opportunity.meetingLink || '',
         opportunityType: opportunity.opportunityType,
         opensAt: opportunity.opensAt ? opportunity.opensAt.slice(0, 16) : '',
         closesAt: opportunity.closesAt ? opportunity.closesAt.slice(0, 16) : '',
@@ -60,7 +62,13 @@ export default function OpportunityEditPage() {
     try {
       await update.mutateAsync({
         id: id!,
-        dto: { ...data, applicationLink: data.applicationLink || undefined, opensAt: data.opensAt || undefined, closesAt: data.closesAt || undefined },
+        dto: {
+          ...data,
+          applicationLink: data.applicationLink || undefined,
+          meetingLink: data.meetingLink || undefined,
+          opensAt: data.opensAt || undefined,
+          closesAt: data.closesAt || undefined,
+        },
       })
       navigate(ROUTES.ADMIN_OPPORTUNITIES)
     } catch (e) {
@@ -123,6 +131,12 @@ export default function OpportunityEditPage() {
               <Input id="applicationLink" type="url" placeholder="https://company.example.com/careers/apply" {...register('applicationLink')} />
               <p className="text-xs text-muted-foreground">Optional. Shown to students as an "Apply" link once published.</p>
               {errors.applicationLink && <p className="text-xs text-destructive">{errors.applicationLink.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="meetingLink">Meeting / Assessment Link</Label>
+              <Input id="meetingLink" type="url" placeholder="https://zoom.us/j/1234567890" {...register('meetingLink')} />
+              <p className="text-xs text-muted-foreground">Optional. A Zoom/meeting link or an assessment/test link, shown to students once published.</p>
+              {errors.meetingLink && <p className="text-xs text-destructive">{errors.meetingLink.message}</p>}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
