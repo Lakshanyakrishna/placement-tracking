@@ -9,6 +9,7 @@ import { BentoCard, BentoGrid } from '@/components/ui/bento-card'
 import { CompletionGauge } from '@/components/dashboard/CompletionGauge'
 import { AnimatedNumber } from '@/components/dashboard/AnimatedNumber'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
+import { FollowUpQueue } from '@/components/dashboard/FollowUpQueue'
 
 const STATUS_COLORS = { submitted: '#eab308', verified: '#10b981', rejected: '#ef4444' }
 
@@ -156,6 +157,10 @@ export default function MentorDashboardPage() {
           <CertificationBreakdownTable groups={groups ?? []} />
         )}
       </div>
+
+      <BentoCard>
+        <FollowUpQueue items={data.followUpQueue} />
+      </BentoCard>
     </div>
   )
 }
