@@ -51,62 +51,60 @@ export function ChangePasswordForm({ email, onComplete }: ChangePasswordFormProp
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#FAFAFA] px-4">
-      <Card className="w-full max-w-sm border shadow-sm">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[#FEF2F2]">
-            <GraduationCap className="h-6 w-6 text-[#B91C1C]" />
-          </div>
-          <CardTitle className="text-lg text-[#111827]">Change Password</CardTitle>
-          <p className="mt-1 text-sm text-[#6B7280]">St. Mary&apos;s Career Hub</p>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4 flex items-start gap-2 rounded-md bg-amber-50 p-3 text-xs text-amber-800">
-            <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span>
-              Your administrator has requested that you change your password before continuing.
-            </span>
-          </div>
+    <Card className="w-full max-w-sm border-0 shadow-none">
+      <CardHeader className="text-center">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[#FEF2F2]">
+          <GraduationCap className="h-6 w-6 text-[#B91C1C]" />
+        </div>
+        <CardTitle className="text-lg text-[#111827]">Change Password</CardTitle>
+        <p className="mt-1 text-sm text-[#6B7280]">St. Mary&apos;s Career Hub</p>
+      </CardHeader>
+      <CardContent>
+        <div className="mb-4 flex items-start gap-2 rounded-md bg-amber-50 p-3 text-xs text-amber-800">
+          <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>
+            Your administrator has requested that you change your password before continuing.
+          </span>
+        </div>
 
-          {success ? (
-            <div className="rounded-md bg-green-50 p-4 text-center text-sm text-green-700">
-              Password changed successfully. Redirecting...
+        {success ? (
+          <div className="rounded-md bg-green-50 p-4 text-center text-sm text-green-700">
+            Password changed successfully. Redirecting...
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm text-[#111827]">Email</Label>
+              <Input id="email" type="email" value={email} disabled />
             </div>
-          ) : (
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm text-[#111827]">Email</Label>
-                <Input id="email" type="email" value={email} disabled />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="currentPassword" className="text-sm text-[#111827]">Current Password</Label>
-                <Input id="currentPassword" type="password" {...register('currentPassword')} />
-                {errors.currentPassword && (
-                  <p className="text-xs text-red-600">{errors.currentPassword.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="newPassword" className="text-sm text-[#111827]">New Password</Label>
-                <Input id="newPassword" type="password" {...register('newPassword')} />
-                {errors.newPassword && (
-                  <p className="text-xs text-red-600">{errors.newPassword.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-sm text-[#111827]">Confirm New Password</Label>
-                <Input id="confirmPassword" type="password" {...register('confirmPassword')} />
-                {errors.confirmPassword && (
-                  <p className="text-xs text-red-600">{errors.confirmPassword.message}</p>
-                )}
-              </div>
-              {error && <p className="text-sm text-red-600">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? 'Changing...' : 'Change Password'}
-              </Button>
-            </form>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword" className="text-sm text-[#111827]">Current Password</Label>
+              <Input id="currentPassword" type="password" {...register('currentPassword')} />
+              {errors.currentPassword && (
+                <p className="text-xs text-red-600">{errors.currentPassword.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="newPassword" className="text-sm text-[#111827]">New Password</Label>
+              <Input id="newPassword" type="password" {...register('newPassword')} />
+              {errors.newPassword && (
+                <p className="text-xs text-red-600">{errors.newPassword.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-sm text-[#111827]">Confirm New Password</Label>
+              <Input id="confirmPassword" type="password" {...register('confirmPassword')} />
+              {errors.confirmPassword && (
+                <p className="text-xs text-red-600">{errors.confirmPassword.message}</p>
+              )}
+            </div>
+            {error && <p className="text-sm text-red-600">{error}</p>}
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? 'Changing...' : 'Change Password'}
+            </Button>
+          </form>
+        )}
+      </CardContent>
+    </Card>
   )
 }

@@ -1,20 +1,19 @@
 import { lazy, Suspense, type ReactNode } from 'react'
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppShell } from '@/components/layout/AppShell'
 import { RoleGuard } from '@/components/layout/RoleGuard'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { ROLES } from '@/lib/constants'
 
 // LandingPage and NotFoundPage stay as regular (eager) imports — they're small,
-// public, and needed on first paint. LoginPage pulls in framer-motion for its
-// illustration animations, so it's lazy too — a first-time visitor to "/" only
-// downloads the landing page's own code, not the entire authenticated app (or the
-// login page's animation library) — this is the difference between an ~80 and a
-// 90+ Lighthouse performance score on this bundle.
+// public, and needed on first paint. Login now happens in a modal on the landing
+// page itself (see pages/landing/LoginModal.tsx) rather than a separate route —
+// a first-time visitor to "/" only downloads the landing page's own code, not the
+// entire authenticated app — this is the difference between an ~80 and a 90+
+// Lighthouse performance score on this bundle.
 import LandingPage from '@/pages/LandingPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 
-const LoginPage = lazy(() => import('@/pages/LoginPage'))
 const HelpPage = lazy(() => import('@/pages/HelpPage'))
 const AdminDashboardPage = lazy(() => import('@/pages/admin/DashboardPage'))
 const MentorDashboardPage = lazy(() => import('@/pages/mentor/DashboardPage'))
@@ -41,8 +40,10 @@ export const router = createBrowserRouter([
     element: <LandingPage />,
   },
   {
+    // Kept for anyone with an old /login bookmark or link — redirects to the
+    // landing page with the login modal open.
     path: 'login',
-    element: withSuspense(<LoginPage />),
+    element: <Navigate to="/?login=true" replace />,
   },
   {
     path: 'help',
