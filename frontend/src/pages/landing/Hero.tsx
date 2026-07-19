@@ -1,11 +1,11 @@
-import { useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
-import { ROUTES } from '@/lib/constants'
 import adminDashboardShot from '@/assets/screenshots/admin-dashboard.webp'
 
-export function Hero() {
-  const navigate = useNavigate()
+interface HeroProps {
+  onLoginClick: () => void
+}
 
+export function Hero({ onLoginClick }: HeroProps) {
   const scrollToFeatures = () => {
     document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })
   }
@@ -35,7 +35,7 @@ export function Hero() {
 
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <button
-              onClick={() => navigate(ROUTES.LOGIN)}
+              onClick={onLoginClick}
               className="inline-flex items-center gap-2 rounded-full bg-stmary-primary px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-stmary-primary/20 transition-colors hover:bg-stmary-primary-dark"
             >
               Login <ArrowRight className="h-4 w-4" />

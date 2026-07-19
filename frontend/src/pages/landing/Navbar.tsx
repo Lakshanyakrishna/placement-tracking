@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ROUTES } from '@/lib/constants'
 import crest from '@/assets/stmarys-crest.webp'
 
-export function Navbar() {
-  const navigate = useNavigate()
+interface NavbarProps {
+  onLoginClick: () => void
+}
+
+export function Navbar({ onLoginClick }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
@@ -28,7 +29,7 @@ export function Navbar() {
         </div>
 
         <button
-          onClick={() => navigate(ROUTES.LOGIN)}
+          onClick={onLoginClick}
           className="rounded-full bg-stmary-primary px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-stmary-primary-dark"
         >
           Login
