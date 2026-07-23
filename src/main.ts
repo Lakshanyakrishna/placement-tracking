@@ -3,6 +3,8 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import { join } from 'path';
+import { existsSync, readFileSync } from 'fs';
 import { AppModule } from './app.module';
 import { AppConfigService } from './config/config.service';
 
@@ -16,7 +18,7 @@ async function bootstrap() {
 
   const configService = app.get(AppConfigService);
 
-  app.use(helmet());
+  app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 
   app.use(cookieParser());
 
@@ -51,6 +53,23 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);
+
+  const publicDir = join(__dirname, '..', 'public');
+  if (existsSync(publicDir)) {
+    const { static: serveStatic } = await import('express');
+    app.use(serveStatic(publicDir));
+    const indexPath = join(publicDir, 'index.html');
+    if (existsSync(indexPath)) {
+      const indexContent = readFileSync(indexPath, 'utf-8');
+      app.use((req, res, next) => {
+        if (req.path.startsWith('/api/')) return next();
+        res.type('text/html').send(indexContent);
+      });
+    }
+    logger.log(`Serving static files from ${publicDir}`);
+  } else {
+    logger.warn('public directory not found — not serving frontend');
+  }
 
   const port = process.env.PORT || configService.app.port || 3000;
   await app.listen(port);
