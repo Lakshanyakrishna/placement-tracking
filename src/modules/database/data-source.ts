@@ -20,5 +20,5 @@ export default new DataSource({
   database: process.env.DB_DATABASE || 'placement_tracker',
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
-  ssl: process.env.DB_SSL === 'true',
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
 });

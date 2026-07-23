@@ -17,5 +17,5 @@ export default registerAs('database', () => ({
   username: process.env.DB_USERNAME || 'postgres',
   password: resolvePassword(),
   database: process.env.DB_DATABASE || 'placement_tracker',
-  ssl: process.env.DB_SSL === 'true',
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
 }));
