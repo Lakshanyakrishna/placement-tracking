@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { join } from 'path';
 import { existsSync, readFileSync } from 'fs';
+import type { Request, Response, NextFunction } from 'express';
 import { AppModule } from './app.module';
 import { AppConfigService } from './config/config.service';
 
@@ -61,7 +62,7 @@ async function bootstrap() {
     const indexPath = join(publicDir, 'index.html');
     if (existsSync(indexPath)) {
       const indexContent = readFileSync(indexPath, 'utf-8');
-      app.use((req, res, next) => {
+      app.use((req: Request, res: Response, next: NextFunction) => {
         if (req.path.startsWith('/api/')) return next();
         res.type('text/html').send(indexContent);
       });
