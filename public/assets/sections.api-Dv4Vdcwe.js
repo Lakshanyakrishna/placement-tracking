@@ -1,0 +1,1 @@
+import{r as e}from"./utils-Dtz2-I1D.js";async function t(){return(await e.get(`/sections?limit=100`)).data.data}async function n(t){return(await e.get(`/sections/${t}`)).data}async function r(t){return(await e.get(`/sections/${t}/students`)).data}export{r as n,t as r,n as t};

@@ -1,0 +1,1 @@
+import{t as e}from"./useQuery-CyGalQYi.js";import"./index-Bj0N4I6T.js";import{i as t,o as n}from"./DashboardHeader-BXFBGNes.js";function r(){return e({queryKey:[`dashboard`,`mentor`],queryFn:t})}function i(){return e({queryKey:[`dashboard`,`team-leader`],queryFn:n})}export{i as n,r as t};
